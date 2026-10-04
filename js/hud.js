@@ -15,6 +15,25 @@ export class HUD {
       this.lastState = s;
     }
     const p = g.teams[0].players[g.teams[0].active];
+    const opponent = g.options.local
+      ? g.teams[1].players[g.teams[1].active]
+      : g.teams[1].nearest(g.ball);
+    document.getElementById("opponentTag").textContent =
+      `${opponent.index + 1}  ${opponent.name}`;
+    document.getElementById("opponentStamina").value = opponent.stamina;
+    document.getElementById("feedback").textContent =
+      s === "playing" ? g.feedback || "" : "";
+    for (const [id, name] of [
+      ["homeName", g.options.home],
+      ["awayName", g.options.away],
+    ]) {
+      const element = document.getElementById(id);
+      element.textContent = name
+        .replace(/[^a-z0-9]/gi, "")
+        .slice(0, 3)
+        .toUpperCase();
+      element.title = name;
+    }
     document.getElementById("score").textContent =
       `${g.teams[0].score} : ${g.teams[1].score}`;
     const left = Math.max(0, Math.ceil(g.options.duration - g.rules.elapsed));
@@ -24,7 +43,7 @@ export class HUD {
     document.getElementById("stamina").value = p.stamina;
     document.getElementById("power").value = p.charge;
     document.getElementById("playerTag").textContent =
-      `${p.index + 1}  ${["KEEPER", "ANCHOR", "LEFT WING", "RIGHT WING", "STRIKER"][p.index]}`;
+      `${p.index + 1}  ${p.name}`;
     document.getElementById("notice").textContent =
       s === "countdown"
         ? Math.ceil(g.state.timer)
@@ -32,7 +51,7 @@ export class HUD {
           ? "MATCH DAY"
           : g.notice;
     document.getElementById("matchInfo").textContent =
-      `5v5 • ${g.options.formation} • ${g.ball.owner?.team === 0 ? "IN POSSESSION" : g.ball.owner ? "DEFEND" : "LOOSE BALL"}`;
+      `${g.options.fieldMode.toUpperCase()} • ${["BROADCAST", "TACTICAL", "CLASSIC", "PLAYER"][g.camera.mode]} • ${g.ball.owner?.team === 0 ? "IN POSSESSION" : g.ball.owner ? "DEFEND" : "LOOSE BALL"}`;
     const c = this.radar;
     c.clearRect(0, 0, 180, 120);
     c.strokeStyle = "#ffffff55";
@@ -40,6 +59,7 @@ export class HUD {
     c.beginPath();
     c.moveTo(90, 6);
     c.lineTo(90, 114);
+    c.moveTo(103, 60);
     c.arc(90, 60, 13, 0, Math.PI * 2);
     c.stroke();
     for (const q of g.players) {

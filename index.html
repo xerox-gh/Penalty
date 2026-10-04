@@ -35,10 +35,17 @@
       </div>
       <div id="notice"></div>
       <div id="matchInfo"></div>
+      <div id="feedback" aria-live="polite"></div>
       <div class="meters">
         <span id="playerTag"></span
         ><label>STAMINA <progress id="stamina" max="1"></progress></label
         ><label>SHOT <progress id="power" max="1" value="0"></progress></label>
+      </div>
+      <div class="opponent meters">
+        <span id="opponentTag"></span
+        ><label
+          >STAMINA <progress id="opponentStamina" max="1"></progress
+        ></label>
       </div>
       <canvas id="radar" width="180" height="120"></canvas
       ><button id="pauseButton" aria-label="Pause">Ⅱ</button>
@@ -56,22 +63,39 @@
         <div class="setupTitle">MATCH SETUP <span>01 / KICK OFF</span></div>
         <div class="grid">
           <label
-            >Your team<input id="home" value="NEON FC" maxlength="18" /></label
+            >Pitch rules<select id="fieldMode">
+              <option value="Stadium">Stadium · open touchlines</option>
+              <option value="Arena">Arena · rebound boards</option>
+            </select></label
+          >
+          <label
+            >Camera<select id="cameraSelect">
+              <option value="0">Broadcast</option>
+              <option value="1">Tactical</option>
+              <option value="2">Classic</option>
+              <option value="3">Player</option>
+            </select></label
+          >
+          <label
+            >Your team<input
+              id="home"
+              value="NORTH CITY"
+              maxlength="18" /></label
           ><label
             >Rival team<input
               id="away"
-              value="EMBER FC"
+              value="RIVERSIDE"
               maxlength="18" /></label
           ><label
             >Home kit<input
               type="color"
               id="homeColor"
-              value="#16d7a0" /></label
+              value="#edf1f5" /></label
           ><label
             >Away kit<input
               type="color"
               id="awayColor"
-              value="#ff664b" /></label
+              value="#cf3046" /></label
           ><label
             >Match length<select id="duration">
               <option value="120">2 minutes</option>
@@ -121,12 +145,16 @@
         <p>
           Local mode: P1 WASD; P2 arrows, Enter shoot, / pass, . chip, right
           Shift sprint, , tackle, Backspace switch. Gamepad: left stick, A
-          shoot, B pass, X chip, Y tackle, RB sprint, LB switch.
+          shoot, B pass, X chip, Y tackle, RB sprint, LB switch, LT precision,
+          RT through. P2: apostrophe for precision.
         </p>
         <p>
           Move to dribble. Aim your pass with the stick or movement keys. Shots
           near goal are assisted; up/down selects the finish. Sprint takes
-          longer touches. Attack the goal on the right (+X).
+          longer touches. Hold Z for close control; Z + Space produces a placed
+          shot. Shift + E sends the passer on a forward run. Stadium uses
+          kick-ins, corners and goal kicks; Arena has rebound boards. Attack the
+          right-hand goal (+X).
         </p>
       </details>
       <p id="boot">Loading stadium…</p>
@@ -140,6 +168,11 @@
       <p>
         Gamepad: A shoot / B pass / X chip / Y tackle / RB sprint / LB switch.
         Local P2: arrows / Enter / slash / period / comma / Backspace.
+      </p>
+      <p>
+        Hold Z for close control and placed shots. Shift + E: pass and run.
+        Gamepad LT: precision, RT: through ball, RB + B: pass and run. P2
+        precision: apostrophe. Touch: hold CONTROL with SHOOT, or RUN with PASS.
       </p>
       <label
         >Volume<input
@@ -162,7 +195,9 @@
     <div id="touch" hidden>
       <div id="joystick"><div></div></div>
       <div class="actions">
-        <button data-action="switch">SWITCH</button
+        <button data-action="precision">CONTROL</button
+        ><button data-action="through">THROUGH</button
+        ><button data-action="switch">SWITCH</button
         ><button data-action="sprint">RUN</button
         ><button data-action="tackle">SLIDE</button
         ><button data-action="pass">PASS</button

@@ -3,6 +3,7 @@ import { CFG, distance } from "./config.js";
 export class Ball {
   constructor(scene, audio) {
     this.audio = audio;
+    this.boardsEnabled = true;
     this.mesh = new T.Mesh(
       new T.IcosahedronGeometry(0.3, 2),
       new T.MeshStandardMaterial({ color: 0xf7f9ec, flatShading: true }),
@@ -90,9 +91,11 @@ export class Ball {
         carrier.cooldown = 0.35;
         this.audio.play("kick");
       } else if (distance(carrier, this) < 2.7 && this.y < 1.3) {
-        const reach = carrier.sprinting
-          ? CFG.control.sprintTouch
-          : CFG.control.closeTouch;
+        const reach = carrier.precision
+          ? 0.62
+          : carrier.sprinting
+            ? CFG.control.sprintTouch
+            : CFG.control.closeTouch;
         const tx = carrier.x + carrier.dx * reach,
           tz = carrier.z + carrier.dz * reach;
         this.vx = carrier.vx + (tx - this.x) * CFG.control.dribbleSpring;
@@ -172,7 +175,7 @@ export class Ball {
   }
 
   collidePitch() {
-    const H = CFG.pitch.boardHeight;
+    const H = this.boardsEnabled ? CFG.pitch.boardHeight : 0;
     if (Math.abs(this.z) > 19.7 && this.y < H) {
       this.z = Math.sign(this.z) * 19.7;
       this.vz *= -0.75;

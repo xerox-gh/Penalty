@@ -32,6 +32,10 @@ export const CFG = {
     tackleReach: 1.9,
     tackleCooldown: 1.1,
     shotAssistRange: 31,
+    precisionSpeed: 0.62,
+    finessePower: 0.84,
+    finesseSpin: 3.8,
+    runDuration: 3.5,
   },
   match: { step: 1 / 60, aiHz: 12, goalDelay: 3.2, countdown: 3, lineup: 2 },
   difficulty: {

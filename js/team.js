@@ -25,6 +25,8 @@ export class Team {
       p.target.x = p.x;
       p.target.z = p.z;
       p.charge = 0;
+      p.runTimer = 0;
+      p.precision = false;
       p.cooldown = 0.6;
       p.dx = this.dir;
       p.dz = 0;

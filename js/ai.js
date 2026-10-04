@@ -88,7 +88,10 @@ export function decide(team, enemy, ball, difficulty, human) {
           );
       }
     }
-    if (carrier === p) {
+    if (p.runTimer > 0 && possession && carrier !== p) {
+      p.target.x = clamp(p.x + team.dir * 8, -27, 27);
+      p.target.z = clamp(p.z * 0.95, -17, 17);
+    } else if (carrier === p) {
       p.target.x = clamp(p.x + team.dir * 8, -27, 27);
       p.target.z = p.z * 0.7;
       const blocker = enemy.players.find(
@@ -127,6 +130,7 @@ export function decide(team, enemy, ball, difficulty, human) {
   }
 }
 export function moveAI(p, dt, mult) {
+  p.precision = false;
   const dx = p.target.x - p.x,
     dz = p.target.z - p.z,
     l = Math.hypot(dx, dz);

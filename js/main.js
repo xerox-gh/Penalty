@@ -16,13 +16,14 @@ class Game {
   constructor() {
     this.options = {
       duration: 180,
-      home: "NEON FC",
-      away: "EMBER FC",
-      homeColor: "#16d7a0",
-      awayColor: "#ff664b",
+      home: "NORTH CITY",
+      away: "RIVERSIDE",
+      homeColor: "#edf1f5",
+      awayColor: "#cf3046",
       difficulty: "Medium",
       formation: "1-2-1",
       quality: "Medium",
+      fieldMode: "Stadium",
       golden: true,
       local: false,
       auto: true,
@@ -40,11 +41,11 @@ class Game {
       powerPreference: "high-performance",
     });
     this.renderer.toneMapping = T.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.15;
+    this.renderer.toneMappingExposure = 1.0;
     this.renderer.shadowMap.type = T.PCFSoftShadowMap;
-    this.scene.add(new T.HemisphereLight(0xd5ecff, 0x395843, 2));
-    this.sun = new T.DirectionalLight(0xffead5, 2.7);
-    this.sun.position.set(-20, 40, 15);
+    this.scene.add(new T.HemisphereLight(0xd5ecff, 0x69764d, 1.35));
+    this.sun = new T.DirectionalLight(0xfff1da, 2.4);
+    this.sun.position.set(-18, 52, -20);
     this.sun.castShadow = true;
     Object.assign(this.sun.shadow.camera, {
       left: -38,
@@ -61,6 +62,7 @@ class Game {
     this.ball = new Ball(this.scene, this.audio);
     this.camera = new Camera(innerWidth / innerHeight);
     this.makeTeams();
+    this.ball.boardsEnabled = false;
     this.rules = new Rules(this);
     this.notice = "";
     this.noticeTime = 0;
@@ -73,9 +75,9 @@ class Game {
     this.slow = 0;
     this.rings = [0, 1].map((i) => {
       const m = new T.Mesh(
-        new T.RingGeometry(0.85, 1.05, 32),
+        new T.RingGeometry(0.68, 0.78, 32),
         new T.MeshBasicMaterial({
-          color: i === 0 ? 0x16ffb0 : 0xff8050,
+          color: i === 0 ? 0xf8f8eb : 0xee4b66,
           side: T.DoubleSide,
         }),
       );
@@ -87,7 +89,7 @@ class Game {
     this.markers = [0, 1].map((i) => {
       const marker = new T.Mesh(
         new T.ConeGeometry(0.32, 0.48, 3),
-        new T.MeshBasicMaterial({ color: i === 0 ? 0xd4ff44 : 0x61d8ff }),
+        new T.MeshBasicMaterial({ color: i === 0 ? 0x75aeff : 0xf7f7ee }),
       );
       marker.rotation.z = Math.PI;
       this.scene.add(marker);
@@ -148,6 +150,8 @@ class Game {
       new Team(this.scene, 1, this.options.awayColor, this.options.formation),
     ];
     this.players = this.teams.flatMap((t) => t.players);
+    for (const p of this.players)
+      p.openPitch = this.options.fieldMode === "Stadium";
   }
   quality(level) {
     this.options.quality = level;
@@ -158,7 +162,11 @@ class Game {
     );
     this.renderer.shadowMap.enabled = !low;
     this.sun.shadow.mapSize.set(high ? 2048 : 1024, high ? 2048 : 1024);
-    this.pitch.crowd.count = low ? 240 : high ? 720 : 480;
+    this.pitch.crowd.count = Math.min(
+      this.pitch.crowdCapacity,
+      low ? 850 : high ? 3000 : 1800,
+    );
+    this.pitch.heads.count = this.pitch.crowd.count;
     this.particles.limit = low ? 20 : high ? 100 : 60;
     this.resize();
   }
@@ -176,6 +184,7 @@ class Game {
       "difficulty",
       "formation",
       "quality",
+      "fieldMode",
     ])
       this.options[k] = $(k).value;
     this.options.home = this.options.home.trim() || "HOME";
@@ -188,6 +197,11 @@ class Game {
     this.makeTeams();
     this.rules = new Rules(this);
     this.ball.reset();
+    this.camera.mode = Number($("cameraSelect").value);
+    this.feedback = "";
+    this.feedbackTime = 0;
+    this.ball.boardsEnabled = this.options.fieldMode === "Arena";
+    this.pitch.boards.visible = this.ball.boardsEnabled;
     this.quality(this.options.quality);
     document.documentElement.style.setProperty(
       "--home",
@@ -213,6 +227,7 @@ class Game {
       team.switch(this.ball, { x: c.x, z: c.z });
       return;
     }
+    p.precision = !!c.precision;
     p.move(c.x, c.z, c.sprint, dt);
     const goalX = team.dir * 30;
     const inRange = Math.hypot(goalX - p.x, p.z) < CFG.control.shotAssistRange;
@@ -230,9 +245,11 @@ class Game {
           p,
           shotX,
           shotZ,
-          18 + p.charge * 16,
-          0.6 + p.charge * 3.2,
-          (p.vz * p.dx - p.vx * p.dz) * 0.7,
+          (18 + p.charge * 16) * (c.precision ? CFG.control.finessePower : 1),
+          c.precision ? 2.6 : 0.6 + p.charge * 3.2,
+          c.precision
+            ? -Math.sign(shotZ || p.z || 1) * team.dir * CFG.control.finesseSpin
+            : (p.vz * p.dx - p.vx * p.dz) * 0.7,
         )
       ) {
         this.camera.shake = 0.5;
@@ -260,6 +277,11 @@ class Game {
       ) {
         team.active = target.player.index;
         team.passLock = 1.5;
+        if (c.sprint) {
+          p.runTimer = CFG.control.runDuration;
+          this.feedback = "PASS & MOVE";
+          this.feedbackTime = 1.3;
+        }
       }
     }
     if (c.lobEdge) this.ball.kick(p, shotX, shotZ, 16, 10);
@@ -332,10 +354,11 @@ class Game {
     }
     for (const team of this.teams) {
       const human = team.id === 0 || this.options.local;
+      const controlledIndex = human ? team.active : -1;
       if (human) this.human(team, dt, team.id === 1);
       for (const p of team.players) {
         if (p.keeper) goalkeeper(p, team, this.ball, dt, this.audio);
-        else if (!human || p.index !== team.active)
+        else if (p.index !== controlledIndex)
           moveAI(p, dt, CFG.difficulty[this.options.difficulty].speed);
       }
     } // Resolve player overlap with a small symmetric displacement.
@@ -348,13 +371,43 @@ class Game {
           d = Math.hypot(dx, dz);
         if (d < 1.1 && d > 0.01) {
           const shift = (1.1 - d) * 0.5;
-          a.x = clamp(a.x + (dx / d) * shift, -29, 29);
-          a.z = clamp(a.z + (dz / d) * shift, -19, 19);
-          b.x = clamp(b.x - (dx / d) * shift, -29, 29);
-          b.z = clamp(b.z - (dz / d) * shift, -19, 19);
+          a.x = clamp(
+            a.x + (dx / d) * shift,
+            a.openPitch ? -31 : -29,
+            a.openPitch ? 31 : 29,
+          );
+          a.z = clamp(
+            a.z + (dz / d) * shift,
+            a.openPitch ? -21 : -19,
+            a.openPitch ? 21 : 19,
+          );
+          b.x = clamp(
+            b.x - (dx / d) * shift,
+            b.openPitch ? -31 : -29,
+            b.openPitch ? 31 : 29,
+          );
+          b.z = clamp(
+            b.z - (dz / d) * shift,
+            b.openPitch ? -21 : -19,
+            b.openPitch ? 21 : 19,
+          );
         }
       }
+    const previousOwner = this.ball.owner;
     this.ball.update(dt, this.players);
+    if (
+      this.ball.owner &&
+      this.ball.owner !== previousOwner &&
+      this.ball.owner.team === 0 &&
+      this.teams[0].passLock > 0
+    ) {
+      this.feedback = "GOOD FIRST TOUCH";
+      this.feedbackTime = 1.1;
+    }
+    if (this.feedbackTime > 0) {
+      this.feedbackTime -= dt;
+      if (this.feedbackTime <= 0) this.feedback = "";
+    }
     this.rules.update(dt);
     this.particles.update(dt);
     if (this.noticeTime > 0) {
@@ -387,13 +440,13 @@ class Game {
     for (const p of this.players) {
       p.celebrate =
         this.state.name === "goal" && p.team === 1 - this.rules.kickTeam;
-      p.render(this.time);
+      p.render(this.time, dt);
     }
     this.ball.render(dt);
     this.rings.forEach((r, i) => {
       const p = this.teams[i].players[this.teams[i].active];
       r.position.set(p.x, 0.07, p.z);
-      this.markers[i].position.set(p.x, 2.65, p.z);
+      this.markers[i].position.set(p.x, 2.3, p.z);
       this.markers[i].visible =
         this.state.name !== "menu" && (i === 0 || this.options.local);
       r.visible = this.state.name !== "menu" && (i === 0 || this.options.local);

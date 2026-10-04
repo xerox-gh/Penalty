@@ -100,6 +100,7 @@ export class Input {
           tackle: "Comma",
           switch: "Backspace",
           sprint: "ShiftRight",
+          precision: "Quote",
         }
       : {
           shoot: "Space",
@@ -109,6 +110,7 @@ export class Input {
           tackle: "KeyF",
           switch: "Tab",
           sprint: "ShiftLeft",
+          precision: "KeyZ",
         };
     const out = {
       x: second
@@ -126,7 +128,16 @@ export class Input {
       out.x += this.stick.x + this.pad.x;
       out.z += this.stick.z + this.pad.z;
     }
-    const pads = { shoot: 0, pass: 1, lob: 2, tackle: 3, sprint: 5, switch: 4 };
+    const pads = {
+      shoot: 0,
+      pass: 1,
+      lob: 2,
+      tackle: 3,
+      sprint: 5,
+      switch: 4,
+      precision: 6,
+      through: 7,
+    };
     for (const [a, code] of Object.entries(mappings)) {
       out[a] =
         k.has(code) ||

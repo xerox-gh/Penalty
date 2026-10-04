@@ -576,3 +576,223 @@ details {
     font-size: 36px;
   }
 }
+
+/* A compact TV graphic and paired player cards keep the turf unobstructed. */
+:root {
+  --accent: #bdd4ff;
+  --home: #edf1f5;
+  --away: #cf3046;
+}
+#menu {
+  border-top-color: #e9eef8;
+  background: linear-gradient(145deg, #0d182af5, #142338eb);
+}
+.score {
+  top: 34px;
+  left: 28px;
+  height: 40px;
+  background: #102344;
+  box-shadow: 0 3px 12px #0003;
+}
+.score span {
+  padding: 13px 18px;
+  font-size: 12px;
+  min-width: 66px;
+  text-align: center;
+}
+.score b {
+  height: 40px;
+  font-size: 20px;
+  letter-spacing: 6px;
+  padding: 9px 12px;
+  background: #192e62;
+  color: white;
+}
+.score small {
+  order: -1;
+  height: 40px;
+  padding: 13px;
+  background: #f3f2e9;
+  color: #151d2a;
+}
+.broadcast {
+  font-size: 10px;
+  top: 27px;
+  right: 28px;
+  letter-spacing: 3px;
+}
+#matchInfo {
+  top: 83px;
+  left: 28px;
+  font-size: 8px;
+}
+.meters {
+  bottom: 24px;
+  left: 24px;
+  min-width: 205px;
+  background: linear-gradient(90deg, #14291ecc, #14291e88);
+  border: 0;
+  border-top: 3px solid var(--home);
+  padding: 11px 14px;
+}
+#playerTag,
+#opponentTag {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.6px;
+}
+.meters progress {
+  accent-color: #b7cc93;
+}
+.opponent.meters {
+  left: auto;
+  right: 24px;
+  text-align: right;
+  border-top-color: var(--away);
+}
+#radar {
+  width: 168px;
+  height: 112px;
+  background: #102c1840;
+  border: 1px solid #eef6dd44;
+  opacity: 0.8;
+}
+#feedback {
+  position: absolute;
+  top: 24%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  color: #f7f7ed;
+  text-shadow: 0 2px 5px #162c16;
+}
+#notice {
+  color: white;
+  text-shadow: 0 3px 18px #102137;
+  font-size: 48px;
+}
+.actions {
+  grid-template-columns: repeat(4, 57px);
+  gap: 7px;
+}
+.actions button {
+  height: 55px;
+  font-size: 8px;
+  background: #0b1929c4;
+}
+.actions button[data-action="shoot"] {
+  background: #edf1e5de;
+  color: #162121;
+}
+.actions button[data-action="precision"] {
+  border-color: #98b9e9;
+}
+@media (max-width: 650px) {
+  .score {
+    top: 12px;
+    left: 10px;
+    height: 35px;
+  }
+  .score span {
+    font-size: 10px;
+    min-width: 47px;
+    padding: 11px 9px;
+  }
+  .score b {
+    height: 35px;
+    padding: 9px;
+    font-size: 16px;
+  }
+  .score small {
+    height: 35px;
+    padding: 11px 8px;
+    font-size: 10px;
+  }
+  .broadcast {
+    top: 58px;
+    right: 10px;
+    font-size: 8px;
+  }
+  #matchInfo {
+    top: 58px;
+    left: 10px;
+    font-size: 7px;
+  }
+  #notice {
+    font-size: 34px;
+  }
+  .meters {
+    left: 12px;
+    bottom: 183px;
+    min-width: 148px;
+    max-width: 150px;
+    padding: 9px;
+  }
+  #playerTag,
+  #opponentTag {
+    font-size: 11px;
+  }
+  .opponent.meters {
+    right: 12px;
+    bottom: 183px;
+    min-width: 130px;
+    max-width: 140px;
+  }
+  .opponent label {
+    margin-top: 16px;
+  }
+  #radar {
+    bottom: 259px;
+    width: 124px;
+    height: 82px;
+    left: auto;
+    right: 12px;
+    transform: none;
+  }
+  .actions {
+    grid-template-columns: repeat(3, 55px);
+    right: 12px;
+    bottom: 15px;
+    gap: 5px;
+  }
+  .actions button {
+    height: 47px;
+  }
+  #joystick {
+    width: 116px;
+    height: 116px;
+    left: 18px;
+    bottom: 28px;
+  }
+  #joystick div {
+    left: 34px;
+    top: 34px;
+  }
+}
+@media (max-height: 500px) and (pointer: coarse) {
+  .meters {
+    bottom: 130px;
+  }
+  .opponent.meters {
+    display: none;
+  }
+  #radar {
+    bottom: 132px;
+    left: auto;
+    right: 12px;
+    transform: none;
+    width: 110px;
+    height: 73px;
+  }
+  .actions {
+    grid-template-columns: repeat(4, 52px);
+  }
+  .actions button {
+    height: 46px;
+  }
+  #menu {
+    max-height: 94dvh;
+  }
+}

@@ -193,3 +193,32 @@ assert.equal(
 console.log(
   "PASS: close dribbling, teammate possession protection, slide dispossession, first touch and directional passing",
 );
+
+// Stadium touchlines stay open; the alternate arena still rebounds low balls.
+ball.boardsEnabled = false;
+ball.reset(0, 19.6);
+ball.vz = 14;
+ball.update(0.1, []);
+assert.ok(ball.z > 20.6 && ball.vz > 0);
+ball.boardsEnabled = true;
+ball.reset(0, 19.6);
+ball.vz = 14;
+ball.update(0.1, []);
+assert.ok(ball.z <= 19.7 && ball.vz < 0);
+Object.assign(carrier, {
+  x: 0,
+  z: 0,
+  vx: 0,
+  vz: 0,
+  stamina: 1,
+  precision: true,
+});
+for (let i = 0; i < 60; i++) carrier.move(1, 0, true, 1 / 60);
+const preciseDistance = carrier.x;
+Object.assign(carrier, { x: 0, z: 0, vx: 0, vz: 0, precision: false });
+for (let i = 0; i < 60; i++) carrier.move(1, 0, false, 1 / 60);
+assert.ok(
+  preciseDistance < carrier.x * 0.7,
+  "close control slows movement even with sprint held",
+);
+console.log("PASS: stadium/arena boundaries and precision movement");
