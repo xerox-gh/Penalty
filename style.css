@@ -1,0 +1,251 @@
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: #0c1724;
+  color: #f0f8fc;
+  font:
+    15px system-ui,
+    sans-serif;
+  overflow: hidden;
+}
+#game {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+.panel {
+  position: absolute;
+  left: 5vw;
+  top: 50%;
+  transform: translateY(-50%);
+  width: min(540px, 90vw);
+  max-height: 92dvh;
+  overflow: auto;
+  padding: 30px;
+  background: #0c1724ed;
+  border: 1px solid #ffffff25;
+  border-radius: 20px;
+  box-shadow: 0 20px 80px #0006;
+  backdrop-filter: blur(12px);
+}
+.eyebrow {
+  color: #16d7a0;
+  font-size: 11px;
+  letter-spacing: 3px;
+}
+h1 {
+  font-size: 64px;
+  letter-spacing: -4px;
+  line-height: 1;
+  margin: 18px 0 24px;
+}
+h1 span {
+  display: block;
+  font-size: 17px;
+  letter-spacing: 0;
+  font-weight: 400;
+  color: #9ab0bf;
+  margin-top: 14px;
+}
+h2 {
+  font-size: 32px;
+}
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+label {
+  display: block;
+  font-size: 12px;
+  color: #bacad4;
+}
+input,
+select,
+button {
+  font: inherit;
+  border: 1px solid #ffffff25;
+  border-radius: 9px;
+  color: inherit;
+  background: #1c2b3a;
+  padding: 10px;
+}
+input:not([type="checkbox"]),
+select {
+  display: block;
+  width: 100%;
+  margin-top: 5px;
+}
+input[type="color"] {
+  height: 38px;
+  padding: 3px;
+}
+button {
+  cursor: pointer;
+}
+button:hover {
+  filter: brightness(1.2);
+}
+.primary {
+  background: #16d7a0;
+  color: #07221c;
+  font-weight: 800;
+  border: 0;
+  width: 100%;
+  margin: 18px 0;
+  padding: 15px;
+}
+.checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 16px;
+}
+details,
+p {
+  color: #a8bac8;
+  line-height: 1.6;
+}
+summary {
+  cursor: pointer;
+}
+#boot {
+  font-size: 11px;
+}
+.score {
+  position: absolute;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  background: #0c1724dc;
+  padding: 12px 22px;
+  border-radius: 12px;
+  white-space: nowrap;
+}
+.score b {
+  font-size: 26px;
+}
+.score small {
+  color: #16d7a0;
+}
+.meters {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  background: #0c1724dc;
+  padding: 15px;
+  border-radius: 12px;
+  min-width: 190px;
+}
+.meters label {
+  margin-top: 7px;
+}
+progress {
+  display: block;
+  width: 100%;
+  height: 8px;
+  accent-color: #16d7a0;
+}
+#radar {
+  position: absolute;
+  right: 20px;
+  bottom: 20px;
+  background: #0c1724cb;
+  border: 1px solid #fff3;
+  border-radius: 8px;
+}
+#notice {
+  position: absolute;
+  top: 28%;
+  width: 100%;
+  text-align: center;
+  font-size: 40px;
+  font-weight: 900;
+  text-shadow: 0 3px 15px #000;
+}
+#pauseButton {
+  position: absolute;
+  right: 16px;
+  top: 16px;
+}
+#joystick {
+  position: absolute;
+  bottom: 30px;
+  left: 25px;
+  width: 125px;
+  height: 125px;
+  border: 2px solid #fff4;
+  border-radius: 50%;
+  background: #0c172480;
+  touch-action: none;
+}
+#joystick div {
+  position: absolute;
+  width: 44px;
+  height: 44px;
+  left: 38px;
+  top: 38px;
+  border-radius: 50%;
+  background: #16d7a0aa;
+}
+.actions {
+  position: absolute;
+  right: 15px;
+  bottom: 25px;
+  display: grid;
+  grid-template-columns: repeat(3, 65px);
+  gap: 9px;
+}
+.actions button {
+  height: 60px;
+  font-size: 10px;
+  font-weight: bold;
+  touch-action: none;
+  background: #0c1724c9;
+}
+[hidden] {
+  display: none !important;
+}
+@media (max-width: 650px) {
+  .panel {
+    padding: 20px;
+  }
+  h1 {
+    font-size: 46px;
+  }
+  .score {
+    gap: 9px;
+    padding: 8px;
+    font-size: 11px;
+    top: 10px;
+  }
+  .score b {
+    font-size: 20px;
+  }
+  #radar {
+    width: 110px;
+    height: 74px;
+    bottom: 170px;
+    right: 10px;
+  }
+  .meters {
+    bottom: 170px;
+    left: 10px;
+    min-width: 130px;
+    padding: 8px;
+    font-size: 12px;
+  }
+  #notice {
+    font-size: 28px;
+  }
+}
+/* The touch layer spans the viewport without intercepting pitch/HUD taps. */
+#touch { position: fixed; inset: 0; pointer-events: none; }
+#touch button, #joystick { pointer-events: auto; }

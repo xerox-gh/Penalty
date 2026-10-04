@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#0c1724" />
+    <meta
+      name="description"
+      content="Penalty: fast, procedural 3D five-a-side soccer."
+    />
+    <meta property="og:title" content="Penalty • Five-a-side" />
+    <meta
+      property="og:description"
+      content="A free browser soccer game. Pick your colors and take the pitch."
+    />
+    <meta property="og:type" content="website" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2317d49c'/%3E%3Ctext x='12' y='48' font-size='46'%3E⚽%3C/text%3E%3C/svg%3E"
+    />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="stylesheet" href="./style.css" />
+    <title>Penalty • Five-a-side</title>
+  </head>
+  <body>
+    <canvas id="game" aria-label="3D soccer pitch"></canvas>
+    <div id="hud" hidden>
+      <div class="score">
+        <span id="homeName"></span><b id="score">0 : 0</b
+        ><span id="awayName"></span><small id="clock">3:00</small>
+      </div>
+      <div id="notice"></div>
+      <div class="meters">
+        <span id="playerTag"></span
+        ><label>STAMINA <progress id="stamina" max="1"></progress></label
+        ><label>SHOT <progress id="power" max="1" value="0"></progress></label>
+      </div>
+      <canvas id="radar" width="180" height="120"></canvas
+      ><button id="pauseButton" aria-label="Pause">Ⅱ</button>
+    </div>
+    <main id="menu" class="panel">
+      <div class="eyebrow">PROCEDURAL FOOTBALL / 5 v 5</div>
+      <h1>PENALTY<span>Small pitch. Big moments.</span></h1>
+      <form id="setup">
+        <div class="grid">
+          <label
+            >Your team<input id="home" value="NEON FC" maxlength="18" /></label
+          ><label
+            >Rival team<input
+              id="away"
+              value="EMBER FC"
+              maxlength="18" /></label
+          ><label
+            >Home kit<input
+              type="color"
+              id="homeColor"
+              value="#16d7a0" /></label
+          ><label
+            >Away kit<input
+              type="color"
+              id="awayColor"
+              value="#ff664b" /></label
+          ><label
+            >Match length<select id="duration">
+              <option value="120">2 minutes</option>
+              <option value="180" selected>3 minutes</option>
+              <option value="300">5 minutes</option>
+            </select></label
+          ><label
+            >Difficulty<select id="difficulty">
+              <option>Easy</option>
+              <option selected>Medium</option>
+              <option>Hard</option>
+            </select></label
+          ><label
+            >Formation<select id="formation">
+              <option>1-2-1</option>
+              <option>2-1-1</option>
+              <option>1-1-2</option>
+            </select></label
+          ><label
+            >Quality<select id="quality">
+              <option>Low</option>
+              <option selected>Medium</option>
+              <option>High</option>
+            </select></label
+          >
+        </div>
+        <div class="checks">
+          <label
+            ><input id="golden" type="checkbox" checked /> Golden goal if
+            tied</label
+          ><label><input id="local" type="checkbox" /> Local 2-player</label
+          ><label
+            ><input id="auto" type="checkbox" checked /> Auto-switch</label
+          >
+        </div>
+        <button class="primary" type="submit">TAKE THE PITCH →</button>
+      </form>
+      <details>
+        <summary>Controls & match guide</summary>
+        <p>
+          WASD / arrows move · Shift sprint · hold Space, release to shoot · E
+          pass · R through ball · Q chip · F slide · Tab switch · C camera · M
+          mute · P / Esc pause.
+        </p>
+        <p>
+          Local mode: P1 WASD; P2 arrows, Enter shoot, / pass, . chip, right
+          Shift sprint, , tackle, Backspace switch. Gamepad: left stick, A
+          shoot, B pass, X chip, Y tackle, RB sprint, LB switch.
+        </p>
+        <p>
+          Aim by facing your target. Shots curve when moving sideways. Boards
+          keep most balls in play; lofted balls can go out. Attack the goal on
+          the right (+X).
+        </p>
+      </details>
+      <p id="boot">Loading stadium…</p>
+    </main>
+    <section id="pause" class="panel" hidden>
+      <h2>HALF A BREATH</h2>
+      <p>
+        WASD / arrows move · Shift sprint · Space shoot · E pass · R through · Q
+        chip · F tackle · Tab switch · C camera
+      </p>
+      <p>
+        Gamepad: A shoot / B pass / X chip / Y tackle / RB sprint / LB switch.
+        Local P2: arrows / Enter / slash / period / comma / Backspace.
+      </p>
+      <label
+        >Volume<input
+          id="volume"
+          type="range"
+          min="0"
+          max="1"
+          step="0.05"
+          value="0.4" /></label
+      ><button id="mute">Mute / unmute</button
+      ><button id="resume" class="primary">Resume</button
+      ><button id="quit">Back to title</button>
+    </section>
+    <section id="fulltime" class="panel" hidden>
+      <div class="eyebrow">FULL TIME</div>
+      <h2 id="result"></h2>
+      <p id="summary"></p>
+      <button id="again" class="primary">Play again</button>
+    </section>
+    <div id="touch" hidden>
+      <div id="joystick"><div></div></div>
+      <div class="actions">
+        <button data-action="switch">SWITCH</button
+        ><button data-action="sprint">RUN</button
+        ><button data-action="tackle">SLIDE</button
+        ><button data-action="pass">PASS</button
+        ><button data-action="lob">CHIP</button
+        ><button data-action="shoot">SHOOT</button>
+      </div>
+    </div>
+    <script type="module" src="./js/main.js"></script>
+  </body>
+</html>

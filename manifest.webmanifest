@@ -1,0 +1,9 @@
+{
+  "name": "Penalty Five-a-side",
+  "short_name": "Penalty",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0c1724",
+  "theme_color": "#16d7a0"
+}
