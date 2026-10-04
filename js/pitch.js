@@ -42,7 +42,7 @@ export function buildPitch(scene) {
       -27.5 + i * 5,
       -0.1,
       0,
-      new T.MeshStandardMaterial({ color: i % 2 ? 0x287b4d : 0x308955 }),
+      new T.MeshStandardMaterial({ color: i % 2 ? 0x286e37 : 0x367c42 }),
     );
   const line = (w, d, x, z) => box(w, 0.025, d, x, 0.01, z, mats.white);
   line(60, 0.12, 0, -20);
@@ -132,6 +132,41 @@ export function buildPitch(scene) {
       box(0.3, 13, 0.3, x, 6.5, z, mats.stand);
       box(3, 1, 1, x, 13, z, mats.white);
     }
+  // One shared procedural advertising texture around the pitch.
+  const adCanvas = document.createElement("canvas");
+  adCanvas.width = 1024;
+  adCanvas.height = 128;
+  const ad = adCanvas.getContext("2d");
+  ad.fillStyle = "#101827";
+  ad.fillRect(0, 0, 1024, 128);
+  ad.fillStyle = "#d4ff44";
+  ad.font = "italic bold 55px Arial";
+  ad.fillText("PENALTY / PLAY YOUR WAY", 30, 83);
+  const adTexture = new T.CanvasTexture(adCanvas);
+  adTexture.colorSpace = T.SRGBColorSpace;
+  const adMat = new T.MeshBasicMaterial({ map: adTexture, side: T.DoubleSide });
+  const adGeo = new T.PlaneGeometry(15, 1.2);
+  for (const side of [-1, 1])
+    for (let i = 0; i < 4; i++) {
+      const sign = new T.Mesh(adGeo, adMat);
+      sign.position.set(-22.5 + i * 15, 0.7, side * 19.78);
+      if (side === 1) sign.rotation.y = Math.PI;
+      group.add(sign);
+    }
+  // Tunnel, dark fascia and a stadium ribbon give the arena a broadcast silhouette.
+  for (const side of [-1, 1]) {
+    box(70, 1, 1, 0, 4.5, side * 35, mats.board);
+    box(
+      70,
+      0.1,
+      0.2,
+      0,
+      4.65,
+      side * 34.4,
+      new T.MeshBasicMaterial({ color: 0xd4ff44 }),
+    );
+  }
+  box(5, 3, 4, 0, 1.5, -25, mats.board);
   const ground = new T.Mesh(
     new T.PlaneGeometry(350, 350),
     new T.MeshStandardMaterial({ color: 0x172b32 }),

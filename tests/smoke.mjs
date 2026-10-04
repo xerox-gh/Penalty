@@ -13,7 +13,7 @@ const { Team } = await import(root + "/js/team.js");
 const { Ball } = await import(root + "/js/ball.js");
 const { Rules } = await import(root + "/js/rules.js");
 const { State } = await import(root + "/js/state.js");
-const { decide, moveAI } = await import(root + "/js/ai.js");
+const { decide, moveAI, passTarget } = await import(root + "/js/ai.js");
 const { goalkeeper } = await import(root + "/js/goalkeeper.js");
 const scene = new T.Scene(),
   audio = { play() {} },
@@ -139,3 +139,57 @@ teams[0].score = 2;
 rules.update(1 / 60);
 assert.equal(g.state.name, "fulltime");
 console.log("PASS: golden goal and full-time");
+
+// Regression coverage for possession, receiving and intentional defensive tackles.
+const carrier = teams[0].players[1],
+  teammate = teams[0].players[2],
+  tackler = teams[1].players[1];
+Object.assign(carrier, { x: 0, z: 0, dx: 1, dz: 0, vx: 0, vz: 0, cooldown: 0 });
+ball.reset(0.85, 0);
+ball.owner = carrier;
+for (let i = 0; i < 120; i++) {
+  carrier.move(1, 0, false, 1 / 60);
+  ball.update(1 / 60, [carrier]);
+}
+assert.equal(ball.owner, carrier);
+assert.ok(carrier.x > 10);
+assert.ok(Math.hypot(ball.x - carrier.x, ball.z - carrier.z) < 1.5);
+Object.assign(teammate, { x: ball.x, z: ball.z, cooldown: 0 });
+ball.update(1 / 60, [carrier, teammate]);
+assert.equal(ball.owner, carrier);
+assert.equal(
+  ball.kick(teammate, 1, 0),
+  false,
+  "teammates cannot steal possession by kicking",
+);
+Object.assign(tackler, {
+  x: ball.x + 0.3,
+  z: ball.z,
+  dx: -1,
+  dz: 0,
+  slide: 0.4,
+  cooldown: 0,
+});
+ball.update(1 / 60, [carrier, tackler]);
+assert.equal(ball.owner, null);
+assert.equal(ball.lastTeam, 1);
+ball.reset(0, 0);
+ball.vx = 20;
+Object.assign(teammate, { x: 0.7, z: 0, cooldown: 0, slide: 0 });
+ball.update(1 / 60, [teammate]);
+assert.equal(ball.owner, teammate);
+Object.assign(carrier, { x: 0, z: 0 });
+Object.assign(teammate, { x: 10, z: -5 });
+Object.assign(teams[0].players[3], { x: 10, z: 5 });
+Object.assign(teams[0].players[4], { x: -15, z: 0 });
+assert.equal(
+  passTarget(carrier, teams[0], [], false, { x: 0, z: 1 }).player,
+  teams[0].players[3],
+);
+assert.equal(
+  passTarget(carrier, teams[0], [], false, { x: 0, z: -1 }).player,
+  teammate,
+);
+console.log(
+  "PASS: close dribbling, teammate possession protection, slide dispossession, first touch and directional passing",
+);

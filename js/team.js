@@ -14,6 +14,7 @@ export class Team {
     this.reset();
   }
   reset() {
+    this.passLock = 0;
     const anchors = CFG.formations[this.formation];
     this.players.forEach((p, i) => {
       const a = i === 0 ? [-27.5, 0] : anchors[i - 1];

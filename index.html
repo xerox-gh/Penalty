@@ -28,11 +28,13 @@
   <body>
     <canvas id="game" aria-label="3D soccer pitch"></canvas>
     <div id="hud" hidden>
+      <div class="broadcast">PENALTY <strong>LIVE</strong></div>
       <div class="score">
         <span id="homeName"></span><b id="score">0 : 0</b
         ><span id="awayName"></span><small id="clock">3:00</small>
       </div>
       <div id="notice"></div>
+      <div id="matchInfo"></div>
       <div class="meters">
         <span id="playerTag"></span
         ><label>STAMINA <progress id="stamina" max="1"></progress></label
@@ -42,9 +44,16 @@
       ><button id="pauseButton" aria-label="Pause">Ⅱ</button>
     </div>
     <main id="menu" class="panel">
-      <div class="eyebrow">PROCEDURAL FOOTBALL / 5 v 5</div>
-      <h1>PENALTY<span>Small pitch. Big moments.</span></h1>
+      <nav class="modeNav">
+        <b>P / FOOTBALL</b><span>KICK OFF</span><span>LOCAL PLAY</span>
+      </nav>
+      <div class="eyebrow">THE FIVE-A-SIDE EXPERIENCE</div>
+      <h1>PENALTY<span>OWN THE NEXT MOMENT.</span></h1>
+      <div class="menuCaption">
+        Build the move. Find the space. Finish in style.
+      </div>
       <form id="setup">
+        <div class="setupTitle">MATCH SETUP <span>01 / KICK OFF</span></div>
         <div class="grid">
           <label
             >Your team<input id="home" value="NEON FC" maxlength="18" /></label
@@ -98,7 +107,9 @@
             ><input id="auto" type="checkbox" checked /> Auto-switch</label
           >
         </div>
-        <button class="primary" type="submit">TAKE THE PITCH →</button>
+        <button class="primary" type="submit">
+          PLAY MATCH <span>↗</span>
+        </button>
       </form>
       <details>
         <summary>Controls & match guide</summary>
@@ -113,9 +124,9 @@
           shoot, B pass, X chip, Y tackle, RB sprint, LB switch.
         </p>
         <p>
-          Aim by facing your target. Shots curve when moving sideways. Boards
-          keep most balls in play; lofted balls can go out. Attack the goal on
-          the right (+X).
+          Move to dribble. Aim your pass with the stick or movement keys. Shots
+          near goal are assisted; up/down selects the finish. Sprint takes
+          longer touches. Attack the goal on the right (+X).
         </p>
       </details>
       <p id="boot">Loading stadium…</p>

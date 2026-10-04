@@ -1,7 +1,7 @@
 import * as T from "../libs/three.module.js";
 import { CFG, clamp } from "./config.js";
-const bodyGeo = new T.BoxGeometry(0.65, 0.8, 0.4),
-  headGeo = new T.IcosahedronGeometry(0.27, 1),
+const bodyGeo = new T.CylinderGeometry(0.31, 0.24, 0.68, 6),
+  headGeo = new T.IcosahedronGeometry(0.23, 1),
   limbGeo = new T.BoxGeometry(0.19, 0.65, 0.2),
   skin = new T.MeshStandardMaterial({ color: 0xcb936b }),
   shorts = new T.MeshStandardMaterial({ color: 0x152436 });
@@ -20,6 +20,8 @@ export class Player {
       stamina: 1,
       cooldown: 0,
       slide: 0,
+      tackleCooldown: 0,
+      sprinting: false,
       dive: 0,
       charge: 0,
       kick: 0,
@@ -34,18 +36,49 @@ export class Player {
     const torso = new T.Mesh(bodyGeo, this.kit);
     torso.position.y = 1.15;
     this.root.add(torso);
-    const head = new T.Mesh(headGeo, skin);
-    head.position.y = 1.85;
+    const tones = [0xcb936b, 0x805337, 0xe0b18b, 0x573d30, 0xac714e];
+    const head = new T.Mesh(
+      headGeo,
+      new T.MeshStandardMaterial({ color: tones[(index + team * 2) % 5] }),
+    );
+    head.position.y = 1.72;
     this.root.add(head);
+    const hair = new T.Mesh(new T.BoxGeometry(0.36, 0.15, 0.32), shorts);
+    hair.position.set(0, 1.89, -0.03);
+    this.root.add(hair);
+    const waist = new T.Mesh(new T.BoxGeometry(0.48, 0.28, 0.36), shorts);
+    waist.position.y = 0.77;
+    this.root.add(waist);
+    const stripe = new T.Mesh(
+      new T.BoxGeometry(0.09, 0.53, 0.02),
+      new T.MeshStandardMaterial({ color: 0xf2f4ed }),
+    );
+    stripe.position.set(0.13, 1.15, 0.275);
+    this.root.add(stripe);
+    const bootGeo = new T.BoxGeometry(0.23, 0.15, 0.4),
+      sockGeo = new T.BoxGeometry(0.2, 0.27, 0.21);
+    const socks = new T.MeshStandardMaterial({ color: 0xecece2 }),
+      boots = new T.MeshStandardMaterial({
+        color: team === 0 ? 0xd4ff44 : 0x60d8ff,
+      });
     this.legs = [];
     this.arms = [];
     for (const s of [-1, 1]) {
-      const leg = new T.Mesh(limbGeo, shorts);
-      leg.position.set(s * 0.2, 0.4, 0);
+      const leg = new T.Group();
+      leg.position.set(s * 0.17, 0.76, 0);
+      const thigh = new T.Mesh(limbGeo, skin);
+      thigh.position.y = -0.28;
+      leg.add(thigh);
+      const sock = new T.Mesh(sockGeo, socks);
+      sock.position.y = -0.48;
+      leg.add(sock);
+      const boot = new T.Mesh(bootGeo, boots);
+      boot.position.set(0, -0.66, 0.09);
+      leg.add(boot);
       this.root.add(leg);
       this.legs.push(leg);
       const arm = new T.Mesh(limbGeo, skin);
-      arm.position.set(s * 0.47, 1.08, 0);
+      arm.position.set(s * 0.37, 1.08, 0);
       this.root.add(arm);
       this.arms.push(arm);
     }
@@ -63,7 +96,7 @@ export class Player {
         transparent: true,
       }),
     );
-    tag.position.set(0, 1.25, -0.211);
+    tag.position.set(0, 1.2, -0.285);
     tag.rotation.y = Math.PI;
     this.root.add(tag);
     this.root.traverse((o) => {
@@ -78,6 +111,8 @@ export class Player {
       z /= l;
     }
     const fast = sprint && this.stamina > 0.04;
+    this.sprinting = fast && l > 0.1;
+    this.tackleCooldown = Math.max(0, this.tackleCooldown - dt);
     const speed = (fast ? CFG.player.sprint : CFG.player.speed) * mult;
     this.vx += (x * speed - this.vx) * Math.min(1, (dt * CFG.player.accel) / 2);
     this.vz += (z * speed - this.vz) * Math.min(1, (dt * CFG.player.accel) / 2);
@@ -103,13 +138,21 @@ export class Player {
   }
   render(t) {
     this.root.position.set(this.x, 0, this.z);
-    this.root.rotation.y = Math.atan2(this.dx, this.dz);
+    const angle = Math.atan2(this.dx, this.dz),
+      delta = Math.atan2(
+        Math.sin(angle - this.root.rotation.y),
+        Math.cos(angle - this.root.rotation.y),
+      );
+    this.root.rotation.y += delta * 0.24;
     this.root.rotation.z = this.dive > 0 ? 0.9 : 0;
     this.root.rotation.x = this.slide > 0 ? -1 : 0;
     const run = Math.min(1, Math.hypot(this.vx, this.vz) / 5);
     this.legs[0].rotation.x = Math.sin(t * 13) * run * 0.7;
     this.legs[1].rotation.x = this.kick > 0 ? -1.2 : -this.legs[0].rotation.x;
     this.arms.forEach((arm, i) => {
+      arm.rotation.x = this.celebrate
+        ? 0
+        : Math.sin(t * 13 + (i ? Math.PI : 0)) * run * 0.55;
       arm.rotation.z = this.celebrate ? (i === 0 ? 2.4 : -2.4) : 0;
     });
     if (this.celebrate) this.root.position.y = Math.abs(Math.sin(t * 7)) * 0.3;

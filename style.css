@@ -247,5 +247,332 @@ progress {
   }
 }
 /* The touch layer spans the viewport without intercepting pitch/HUD taps. */
-#touch { position: fixed; inset: 0; pointer-events: none; }
-#touch button, #joystick { pointer-events: auto; }
+#touch {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+#touch button,
+#joystick {
+  pointer-events: auto;
+}
+
+/* Broadcast-inspired presentation, with original Penalty branding. */
+:root {
+  --home: #16d7a0;
+  --away: #ff664b;
+  --accent: #d4ff44;
+}
+body {
+  font-family: Arial, Helvetica, sans-serif;
+}
+#menu {
+  width: min(510px, 92vw);
+  left: 5vw;
+  padding: 28px 32px;
+  background: linear-gradient(135deg, #0c1422f5, #101b2af0);
+  border-radius: 2px;
+  border-top: 3px solid var(--accent);
+  box-shadow: 0 25px 120px #0008;
+}
+.modeNav {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  margin-bottom: 34px;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  color: #8192a2;
+}
+.modeNav b {
+  color: white;
+  margin-right: auto;
+}
+.modeNav span:first-of-type {
+  color: var(--accent);
+  border-bottom: 2px solid var(--accent);
+  padding-bottom: 8px;
+}
+#menu .eyebrow {
+  color: var(--accent);
+  font-size: 10px;
+  letter-spacing: 2.5px;
+}
+h1 {
+  font-size: 76px;
+  font-style: italic;
+  font-weight: 950;
+  letter-spacing: -5px;
+  margin: 16px 0 8px;
+}
+h1 span {
+  font-style: normal;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 3px;
+  color: white;
+  margin-top: 13px;
+}
+.menuCaption {
+  font-size: 12px;
+  color: #8c9bac;
+  margin: 14px 0 25px;
+}
+.setupTitle {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 800;
+  margin-bottom: 15px;
+  border-top: 1px solid #ffffff1c;
+  padding-top: 18px;
+}
+.setupTitle span {
+  color: #758697;
+  font-size: 9px;
+  letter-spacing: 1px;
+}
+.grid {
+  gap: 10px 16px;
+}
+input,
+select,
+button {
+  border-radius: 2px;
+}
+input:not([type="checkbox"]),
+select {
+  background: #ffffff08;
+  border: 1px solid #ffffff16;
+  font-size: 12px;
+}
+label {
+  font-size: 10px;
+  letter-spacing: 0.5px;
+}
+.checks {
+  gap: 8px;
+}
+input[type="checkbox"] {
+  accent-color: var(--accent);
+}
+.primary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--accent);
+  color: #111914;
+  border-radius: 1px;
+  font-size: 13px;
+  letter-spacing: 1px;
+}
+.primary span {
+  font-size: 22px;
+}
+.primary:hover {
+  background: #e4ff8b;
+}
+details {
+  font-size: 11px;
+}
+#boot {
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: #789087;
+  margin-bottom: 0;
+}
+.broadcast {
+  position: absolute;
+  right: 25px;
+  top: 25px;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  opacity: 0.85;
+}
+.broadcast strong {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 4px;
+  border: 1px solid #fff9;
+  font-size: 9px;
+  letter-spacing: 1px;
+}
+.score {
+  left: 25px;
+  top: 25px;
+  transform: none;
+  border-radius: 1px;
+  gap: 0;
+  padding: 0;
+  box-shadow: 0 5px 20px #0004;
+  background: #101524ed;
+  height: 46px;
+}
+.score span {
+  padding: 15px;
+  font-weight: 800;
+  font-size: 12px;
+  max-width: 165px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.score #homeName {
+  border-bottom: 3px solid var(--home);
+}
+.score #awayName {
+  border-bottom: 3px solid var(--away);
+}
+.score b {
+  padding: 10px 17px;
+  background: #f1f4ec;
+  color: #121927;
+  font-size: 22px;
+  letter-spacing: 4px;
+  height: 46px;
+}
+.score small {
+  padding: 16px;
+  background: var(--accent);
+  color: #111a10;
+  font-size: 12px;
+  font-weight: 800;
+  height: 46px;
+}
+#pauseButton {
+  top: 62px;
+  right: 25px;
+  font-size: 12px;
+  background: #111928ab;
+  padding: 6px 12px;
+}
+#matchInfo {
+  position: absolute;
+  top: 81px;
+  left: 25px;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  color: #dae4ec;
+  text-shadow: 0 1px 3px #000;
+}
+.meters {
+  bottom: 26px;
+  left: 26px;
+  min-width: 240px;
+  padding: 14px 17px;
+  border-radius: 1px;
+  border-left: 4px solid var(--home);
+  background: linear-gradient(90deg, #101524ee, #101524b0);
+}
+#playerTag {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+.meters label {
+  font-size: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  letter-spacing: 1px;
+}
+.meters progress {
+  height: 5px;
+  flex: 1;
+  accent-color: var(--accent);
+}
+#radar {
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  bottom: 24px;
+  border-radius: 1px;
+  background: #11251b88;
+  opacity: 0.85;
+}
+#notice {
+  top: 30%;
+  font-size: 62px;
+  font-style: italic;
+  letter-spacing: 4px;
+  font-weight: 950;
+  color: var(--accent);
+}
+#pause,
+#fulltime {
+  border-radius: 2px;
+  border-top: 3px solid var(--accent);
+}
+@media (max-width: 650px) {
+  #menu {
+    left: 4vw;
+    padding: 20px;
+    max-height: 94dvh;
+  }
+  h1 {
+    font-size: 56px;
+  }
+  .modeNav {
+    margin-bottom: 20px;
+    font-size: 8px;
+    gap: 12px;
+  }
+  .menuCaption {
+    margin-bottom: 16px;
+  }
+  .score {
+    left: 10px;
+    top: 12px;
+    height: 37px;
+  }
+  .score span {
+    font-size: 9px;
+    padding: 12px 7px;
+    max-width: 86px;
+  }
+  .score b {
+    font-size: 17px;
+    padding: 10px;
+    height: 37px;
+  }
+  .score small {
+    font-size: 10px;
+    padding: 13px 8px;
+    height: 37px;
+  }
+  .broadcast {
+    top: 63px;
+    right: 10px;
+    font-size: 9px;
+  }
+  .broadcast strong {
+    font-size: 7px;
+  }
+  #matchInfo {
+    left: 10px;
+    top: 61px;
+    font-size: 8px;
+  }
+  #pauseButton {
+    top: 88px;
+    right: 10px;
+  }
+  .meters {
+    left: 12px;
+    bottom: 177px;
+    min-width: 160px;
+    padding: 10px;
+  }
+  #playerTag {
+    font-size: 11px;
+  }
+  #radar {
+    left: auto;
+    right: 12px;
+    bottom: 177px;
+    transform: none;
+  }
+  #notice {
+    font-size: 36px;
+  }
+}

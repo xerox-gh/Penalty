@@ -24,13 +24,15 @@ export class HUD {
     document.getElementById("stamina").value = p.stamina;
     document.getElementById("power").value = p.charge;
     document.getElementById("playerTag").textContent =
-      `${g.options.home} • #${p.index + 1}  /  ${["Broadcast", "Top-down", "Sideline", "Player"][g.camera.mode]}`;
+      `${p.index + 1}  ${["KEEPER", "ANCHOR", "LEFT WING", "RIGHT WING", "STRIKER"][p.index]}`;
     document.getElementById("notice").textContent =
       s === "countdown"
         ? Math.ceil(g.state.timer)
         : s === "lineup"
           ? "MATCH DAY"
           : g.notice;
+    document.getElementById("matchInfo").textContent =
+      `5v5 • ${g.options.formation} • ${g.ball.owner?.team === 0 ? "IN POSSESSION" : g.ball.owner ? "DEFEND" : "LOOSE BALL"}`;
     const c = this.radar;
     c.clearRect(0, 0, 180, 120);
     c.strokeStyle = "#ffffff55";

@@ -22,6 +22,16 @@ Entry point: **`index.html` at the repository root**.
 
 All asset URLs are relative. The vendored engine and game modules are precached in the repository's service-worker scope. Bump `CACHE` in `sw.js` when publishing updates.
 
+![Broadcast match preview](./docs/preview.png)
+
+## Broadcast / ball-control update
+
+The presentation now uses a broadcast score graphic, lime-accent match menus, a centered radar, overhead control markers, refined low-poly kits/boots/hair and stadium advertising. This is an original small-sided football game inspired by televised football and console football controls.
+
+Movement keeps the ball close to your feet. Sprinting takes longer touches. Point toward a teammate and pass: control transfers to the intended receiver. Shots within 31 metres receive goal-mouth assistance when facing forward; vertical input chooses the side of the goal. AI supports the ball carrier with width and forward runs, and opposing players use timed tackles. A missed slide has a recovery cooldown.
+
+Tune `CFG.control` for first-touch speed, dribble distance/spring, sprint touches, tackle reach/cooldown and shot-assist range. The game remains 5v5 with arcade rules, not a full 11v11 career-mode simulator.
+
 ## Controls
 
 | Action | Player 1 | Local player 2 | Gamepad |
@@ -38,7 +48,7 @@ All asset URLs are relative. The vendored engine and game modules are precached 
 | Pause | P / Esc | Shared | — |
 | Mute | M | Shared | — |
 
-Touch devices display a joystick and six action buttons. Aim using movement/facing direction. Neutral-stick switching selects a player near the ball; switching with movement favors that direction. Auto-switch can be disabled in setup. The home team attacks the right-hand (+X) goal for the whole match.
+Touch devices display a joystick and six action buttons. Use movement direction to aim passes and choose the finish; close-range shots are assisted. Neutral-stick switching selects a player near the ball; switching with movement favors that direction. Auto-switch can be disabled in setup. The home team attacks the right-hand (+X) goal for the whole match.
 
 ## Included
 
@@ -57,7 +67,7 @@ Low-poly procedural animations cover running, kicking, sliding, diving and celeb
 
 ## Validation performed
 
-`node tests/smoke.mjs` checks both goals, kick-ins, corners, goal kicks, board bounce, gravity, shots, keeper catch/distribution, formations, golden goal/full-time and a 180-second simulation with all ten players. JavaScript syntax and HTTP asset paths under `/Penalty/` were also checked. Headless Chromium rendered the game without console errors, accepted movement/shot/pass/camera input, exercised pause/resume, goal/golden-goal/full-time, and reloaded successfully offline after service-worker installation. Low quality with ten players rendered about 149 draw calls / 6,110 triangles in the test scene. Mobile portrait UI and touch targets were also checked in Chromium emulation. Real-device Chrome/Firefox/Safari/Edge and physical gamepad validation remain outstanding. The headless browser uses software rendering, so neither simulation timing nor these checks establish 60 FPS on real hardware.
+`node tests/smoke.mjs` checks both goals, kick-ins, corners, goal kicks, board bounce, gravity, shots, keeper catch/distribution, formations, golden goal/full-time and a 180-second simulation with all ten players. JavaScript syntax and HTTP asset paths under `/Penalty/` were also checked. Headless Chromium rendered the game without console errors, accepted movement/shot/pass/camera input, exercised pause/resume, goal/golden-goal/full-time, and reloaded successfully offline after service-worker installation. The original Low-quality scene rendered about 149 draw calls / 6,110 triangles; the updated player geometry adds detail, so that figure is not a current performance measurement. Mobile portrait UI and touch targets were also checked in Chromium emulation. Real-device Chrome/Firefox/Safari/Edge and physical gamepad validation remain outstanding. The headless browser uses software rendering, so neither simulation timing nor these checks establish 60 FPS on real hardware.
 
 ## Test checklist
 

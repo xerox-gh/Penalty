@@ -39,6 +39,8 @@ class Game {
       antialias: true,
       powerPreference: "high-performance",
     });
+    this.renderer.toneMapping = T.ACESFilmicToneMapping;
+    this.renderer.toneMappingExposure = 1.15;
     this.renderer.shadowMap.type = T.PCFSoftShadowMap;
     this.scene.add(new T.HemisphereLight(0xd5ecff, 0x395843, 2));
     this.sun = new T.DirectionalLight(0xffead5, 2.7);
@@ -82,6 +84,15 @@ class Game {
       this.scene.add(m);
       return m;
     });
+    this.markers = [0, 1].map((i) => {
+      const marker = new T.Mesh(
+        new T.ConeGeometry(0.32, 0.48, 3),
+        new T.MeshBasicMaterial({ color: i === 0 ? 0xd4ff44 : 0x61d8ff }),
+      );
+      marker.rotation.z = Math.PI;
+      this.scene.add(marker);
+      return marker;
+    });
     this.quality("Medium");
     this.resize();
     addEventListener("resize", () => this.resize());
@@ -113,7 +124,7 @@ class Game {
     $("again").onclick = () => this.start();
     $("mute").onclick = () => this.audio.toggle();
     $("volume").oninput = (e) => this.audio.setVolume(+e.target.value);
-    $("boot").textContent = "Ready • No downloads, accounts, or build step.";
+    $("boot").textContent = "READY TO PLAY • Local match / 5 v 5";
     requestAnimationFrame((t) => this.frame(t));
     if ("serviceWorker" in navigator)
       navigator.serviceWorker.register("./sw.js").catch((e) => {
@@ -178,6 +189,14 @@ class Game {
     this.rules = new Rules(this);
     this.ball.reset();
     this.quality(this.options.quality);
+    document.documentElement.style.setProperty(
+      "--home",
+      this.options.homeColor,
+    );
+    document.documentElement.style.setProperty(
+      "--away",
+      this.options.awayColor,
+    );
     $("homeName").textContent = this.options.home;
     $("awayName").textContent = this.options.away;
     this.notice = "";
@@ -188,21 +207,31 @@ class Game {
   human(team, dt, second = false) {
     const p = team.players[team.active],
       c = this.input.controls(second, this.options.local);
+    team.passLock = Math.max(0, (team.passLock || 0) - dt);
     if (c.switchEdge) {
       p.charge = 0;
       team.switch(this.ball, { x: c.x, z: c.z });
       return;
     }
     p.move(c.x, c.z, c.sprint, dt);
+    const goalX = team.dir * 30;
+    const inRange = Math.hypot(goalX - p.x, p.z) < CFG.control.shotAssistRange;
+    const forward = p.dx * team.dir > -0.2;
+    // Assist towards the goal mouth; stick direction selects the near/far side.
+    const shotX = inRange && forward ? goalX - p.x : p.dx;
+    const shotZ =
+      inRange && forward
+        ? clamp(c.z * 2.8 + p.dz * 0.6, -3.1, 3.1) - p.z
+        : p.dz;
     if (c.shoot) p.charge = clamp(p.charge + dt * 0.8, 0.08, 1);
     else if (p.charge > 0) {
       if (
         this.ball.kick(
           p,
-          p.dx,
-          p.dz,
-          15 + p.charge * 19,
-          1 + p.charge * 5,
+          shotX,
+          shotZ,
+          18 + p.charge * 16,
+          0.6 + p.charge * 3.2,
           (p.vz * p.dx - p.vx * p.dz) * 0.7,
         )
       ) {
@@ -217,25 +246,33 @@ class Game {
         team,
         this.teams[1 - team.id].players,
         c.throughEdge,
+        { x: c.x, z: c.z },
       );
-      if (target)
+      if (
+        target &&
         this.ball.kick(
           p,
           target.x - p.x,
           target.z - p.z,
           Math.min(27, distance(p, target) * 1.1 + 7),
-          c.throughEdge ? 1 : 0,
-        );
+          c.throughEdge ? 0.6 : 0,
+        )
+      ) {
+        team.active = target.player.index;
+        team.passLock = 1.5;
+      }
     }
-    if (c.lobEdge) this.ball.kick(p, p.dx, p.dz, 18, 12);
-    if (c.tackleEdge && p.slide === 0) {
+    if (c.lobEdge) this.ball.kick(p, shotX, shotZ, 16, 10);
+    if (c.tackleEdge && p.tackleCooldown <= 0) {
       p.slide = 0.5;
+      p.tackleCooldown = CFG.control.tackleCooldown;
       p.vx += p.dx * 5;
       p.vz += p.dz * 5;
       this.particles.burst(p.x, p.z, 10);
     }
     if (
       this.options.auto &&
+      team.passLock === 0 &&
       !c.shoot &&
       Math.hypot(c.x, c.z) < 0.2 &&
       distance(p, this.ball) > 6
@@ -356,6 +393,9 @@ class Game {
     this.rings.forEach((r, i) => {
       const p = this.teams[i].players[this.teams[i].active];
       r.position.set(p.x, 0.07, p.z);
+      this.markers[i].position.set(p.x, 2.65, p.z);
+      this.markers[i].visible =
+        this.state.name !== "menu" && (i === 0 || this.options.local);
       r.visible = this.state.name !== "menu" && (i === 0 || this.options.local);
     });
     this.camera.update(
