@@ -37,6 +37,25 @@ The new look blends a readable retro football presentation with a wider broadcas
 
 Tune `CFG.control` for touch distances, dribble spring, precision speed, finesse power/spin, tackle reach and run duration. This remains an original 5v5 arcade game with simplified set pieces, not an exact recreation of the games in the references.
 
+## Offline club update
+
+The title screen now opens your club hub:
+
+- **Career:** a six-club, ten-match season, league table and results. Finish in the top two to progress from Division 3 to Division 1. Difficulty rises with division. Season champions collect a trophy.
+- **Knockout cup:** quarter-final, semi-final and final, with golden goal and a trophy for three wins.
+- **Challenges:** come back from 0–2, win without conceding, or score three in 90 seconds. First completions award badges and bonus packs.
+- **Squad & cards:** 24 fictional players across four rarities. Equip owned cards in five position-specific slots. Card attributes grant modest pace, shot-power and pass-speed bonuses (roughly 0–5%). Packs contain three cards, guarantee one new card while the album is incomplete, and turn duplicates into 20 coins.
+- **Quests:** ten one-time milestones and three repeating contracts. Claim all contracts to refresh the board. Match rewards, quests and level-ups earn coins, XP and packs; every 300 XP grants a pack.
+- **My club:** unlock five kit colors with earned coins, view trophies and records, and export/import your save.
+
+Players now have varied hair styles/colors, faces, ears, collars, cuffs, crests, detailed boots, keeper gloves and named/numbered shirts. Geometry and most materials remain shared.
+
+Everything runs locally, including fixtures, card draws and rewards. No purchases, accounts, server, calendar timers or network checks. Your browser stores progress in `localStorage`. **Export a backup before clearing browser data or moving to another device/address.** Import replaces the current club; malformed saves are rejected. If browser storage fails, the hub says progress is session-only and still allows export. Unreadable existing saves are preserved for recovery rather than overwritten.
+
+Leaving a match or reloading keeps the pending fixture. Resume restarts it from kickoff; abandon earns nothing. Results and quest rewards are applied only once. This is a compact club career, without transfers, player aging, individual player careers or a full management simulation. Quick Match still provides custom settings and local two-player play.
+
+Tune the catalog, rewards, challenges and fixtures in `js/progression.js`; `js/club.js` contains the hub. Card attribute multipliers are in `js/player.js`. The save schema is versioned; changing it requires a migration or a new save key.
+
 ## Controls
 
 | Action | Player 1 | Local player 2 | Gamepad |
@@ -70,7 +89,13 @@ Touch devices display a joystick and eight action buttons. Use movement directio
 
 `js/config.js` holds pitch dimensions, player speeds/stamina, ball constants, formation anchors, difficulty and timing. Goalkeepers and field-player heuristics live in their respective modules. This is an arcade implementation: no fouls, cards, offside, substitutions or halftime. Restarts take 1.5 seconds and automatically position the nearest outfield taker. The goal camera is a live celebration swing, not a recorded replay. Audio is synthesized; crowd ambience is filtered noise. No multiplayer networking.
 
-Low-poly procedural animations cover running, kicking, sliding, diving and celebration; these are simple rigid-part poses, not skeletal motion capture. There is no persistent match history. Quality performance varies by GPU; use Low on older hardware.
+Low-poly procedural animations cover running, kicking, sliding, diving and celebration; these are simple rigid-part poses, not skeletal motion capture. The offline career keeps the current season’s results and club statistics. Quality performance varies by GPU; use Low on older hardware.
+
+## Progression validation
+
+Desktop and mobile-emulated Chromium checks passed for the hub, pack reveal, career start/finish, reward claims, backup download/import, offline reload/play and pending-fixture resume, with no console errors or missing assets under `/Penalty/`.
+
+Run `node tests/progression.mjs` with a current Node.js version. Tests cover all 30 directed league pairings, a complete season and promotion, cup wins/elimination/restarts, all challenges, single-claim rewards, card completion, position rules, kits, save reload, malformed imports, corrupt-save recovery and storage failure. The game itself requires no Node.js or build step.
 
 ## Validation performed
 
@@ -88,3 +113,8 @@ Low-poly procedural animations cover running, kicking, sliding, diving and celeb
 - [ ] Test mobile joystick/buttons in portrait and landscape.
 - [ ] First online load installs service worker; reload and play offline.
 - [ ] Smoke-test current Chrome, Firefox, Safari and Edge on real devices.
+
+- [ ] Open a pack, equip a card, complete a career fixture and claim a quest.
+- [ ] Reload and verify coins, squad and league progress persist.
+- [ ] Export/import a backup; malformed imports must preserve the existing club.
+- [ ] Resume an unfinished fixture offline and verify it starts at kickoff.

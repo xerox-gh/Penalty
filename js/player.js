@@ -2,6 +2,8 @@ import * as T from "../libs/three.module.js";
 import { CFG, clamp } from "./config.js";
 // Shared low-poly body parts; limbs pivot at hips, knees, shoulders and elbows.
 const geometry = {
+  detail: new T.BoxGeometry(1, 1, 1),
+  neck: new T.CylinderGeometry(0.07, 0.085, 0.13, 6),
   torso: new T.CylinderGeometry(0.25, 0.2, 0.54, 8),
   head: new T.IcosahedronGeometry(0.18, 1),
   thigh: new T.CylinderGeometry(0.105, 0.083, 0.4, 6),
@@ -18,7 +20,11 @@ const skinMaterials = [0xdab08c, 0x8e6045, 0xe6bb97, 0x624333, 0xb77e58].map(
   (color) => new T.MeshStandardMaterial({ color, roughness: 1 }),
 );
 const shortsMat = new T.MeshStandardMaterial({ color: 0x192c49, roughness: 1 });
-const hairMat = new T.MeshStandardMaterial({ color: 0x29231f, roughness: 1 });
+const hairMats = [0x211c19, 0x66432b, 0xc7a367, 0x392923].map(
+  (color) => new T.MeshStandardMaterial({ color, roughness: 1 }),
+);
+const eyeMat = new T.MeshStandardMaterial({ color: 0x17202a });
+const goldMat = new T.MeshStandardMaterial({ color: 0xe8c565, roughness: 0.6 });
 const sockMat = new T.MeshStandardMaterial({ color: 0xf0eee5, roughness: 1 });
 const bootMats = [0xeee8da, 0x10151c, 0xee9345, 0xaadaf0].map(
   (color) => new T.MeshStandardMaterial({ color, roughness: 0.8 }),
@@ -28,11 +34,15 @@ const names = [
   ["COSTA", "REED", "SILVA", "MASON", "DIAZ"],
 ];
 export class Player {
-  constructor(scene, team, index, color) {
+  constructor(scene, team, index, color, card = null) {
+    const appearance = card?.appearance ?? index + team * 7;
+    this.paceBoost = 1 + ((card?.pace ?? 65) - 65) * 0.0015;
+    this.shotBoost = 1 + ((card?.shoot ?? 65) - 65) * 0.002;
+    this.passBoost = 1 + ((card?.pass ?? 65) - 65) * 0.001;
     Object.assign(this, {
       team,
       index,
-      name: names[team][index],
+      name: card?.name || names[team][index],
       keeper: index === 0,
       x: 0,
       z: 0,
@@ -59,7 +69,7 @@ export class Player {
       color: this.keeper ? (team === 0 ? 0xe9bf43 : 0x64b29b) : color,
       roughness: 0.85,
     });
-    const skin = skinMaterials[(index + team * 2) % 5];
+    const skin = skinMaterials[appearance % 5];
     const add = (parent, geo, mat, x, y, z) => {
       const m = new T.Mesh(geo, mat);
       m.position.set(x, y, z);
@@ -69,8 +79,71 @@ export class Player {
     };
     add(this.root, geometry.torso, this.kit, 0, 1.22, 0);
     add(this.root, geometry.shorts, shortsMat, 0, 0.88, 0);
-    add(this.root, geometry.head, skin, 0, 1.65, 0.01);
-    add(this.root, geometry.hair, hairMat, 0, 1.67, 0.005);
+    add(this.root, geometry.neck, skin, 0, 1.51, 0);
+    const head = new T.Group();
+    head.position.set(0, 1.67, 0.01);
+    this.root.add(head);
+    const face = add(head, geometry.head, skin, 0, 0, 0);
+    face.scale.set(0.94, 1.12, 0.93);
+    const hair = add(
+      head,
+      geometry.hair,
+      hairMats[appearance % 4],
+      0,
+      0.025,
+      -0.006,
+    );
+    hair.scale.set(
+      1,
+      appearance % 3 === 0 ? 1.45 : appearance % 3 === 1 ? 0.6 : 1,
+      1,
+    );
+    const detail = (parent, mat, x, y, z, sx, sy, sz) => {
+      const m = add(parent, geometry.detail, mat, x, y, z);
+      m.scale.set(sx, sy, sz);
+      return m;
+    };
+    for (const side of [-1, 1]) {
+      detail(head, skin, side * 0.163, -0.012, 0, 0.038, 0.066, 0.045);
+      detail(head, eyeMat, side * 0.065, 0.008, 0.157, 0.031, 0.018, 0.012);
+      detail(
+        head,
+        hairMats[appearance % 4],
+        side * 0.065,
+        0.038,
+        0.154,
+        0.052,
+        0.014,
+        0.013,
+      );
+    }
+    detail(head, skin, 0, -0.025, 0.169, 0.036, 0.062, 0.046);
+    detail(
+      head,
+      hairMats[appearance % 4],
+      0,
+      -0.098,
+      0.139,
+      0.066,
+      0.012,
+      0.012,
+    );
+    if (appearance % 4 === 1)
+      detail(
+        head,
+        hairMats[appearance % 4],
+        0,
+        -0.137,
+        0.103,
+        0.12,
+        0.055,
+        0.045,
+      );
+    detail(this.root, goldMat, -0.105, 1.31, 0.219, 0.063, 0.079, 0.015);
+    detail(this.root, sockMat, 0.11, 1.32, 0.216, 0.065, 0.012, 0.015);
+    detail(this.root, sockMat, 0, 1.13, 0.243, 0.24, 0.021, 0.012);
+    detail(this.root, this.kit, -0.172, 0.87, 0.137, 0.031, 0.2, 0.012);
+    detail(this.root, this.kit, 0.172, 0.87, 0.137, 0.031, 0.2, 0.012);
     const collar = add(this.root, geometry.sleeve, sockMat, 0, 1.49, 0);
     collar.scale.set(0.85, 0.2, 0.85);
     this.legs = [];
@@ -88,7 +161,9 @@ export class Player {
       hip.add(knee);
       this.knees.push(knee);
       add(knee, geometry.shin, sockMat, 0, -0.17, 0);
-      add(knee, geometry.boot, bootMats[(index + team) % 4], 0, -0.34, 0.065);
+      add(knee, geometry.boot, bootMats[appearance % 4], 0, -0.34, 0.065);
+      detail(knee, this.kit, 0, -0.047, 0.067, 0.1, 0.038, 0.021);
+      detail(knee, sockMat, 0, -0.279, 0.1, 0.026, 0.011, 0.09);
       const shoulder = new T.Group();
       shoulder.position.set(side * 0.27, 1.43, 0);
       this.root.add(shoulder);
@@ -101,17 +176,30 @@ export class Player {
       shoulder.add(elbow);
       this.elbows.push(elbow);
       add(elbow, geometry.forearm, skin, 0, -0.14, 0);
+      detail(
+        elbow,
+        this.keeper ? sockMat : skin,
+        0,
+        -0.29,
+        0.008,
+        0.087,
+        0.092,
+        0.079,
+      );
+      detail(shoulder, sockMat, 0, -0.16, 0, 0.15, 0.026, 0.13);
     }
     const canvas = document.createElement("canvas");
-    canvas.width = canvas.height = 64;
+    canvas.width = canvas.height = 128;
     const ctx = canvas.getContext("2d");
     ctx.fillStyle =
       new T.Color(color).r > 0.65 && new T.Color(color).g > 0.65
         ? "#182741"
         : "#ffffff";
-    ctx.font = "bold 48px Arial";
+    ctx.font = "bold 66px Arial";
     ctx.textAlign = "center";
-    ctx.fillText(String(index + 1), 32, 49);
+    ctx.fillText(String(index + 1), 64, 111);
+    ctx.font = "bold 17px Arial";
+    ctx.fillText(this.name, 64, 27, 120);
     const number = add(
       this.root,
       geometry.number,
@@ -139,6 +227,7 @@ export class Player {
     const speed =
       (fast ? CFG.player.sprint : CFG.player.speed) *
       mult *
+      this.paceBoost *
       (this.precision ? CFG.control.precisionSpeed : 1);
     this.vx += (x * speed - this.vx) * Math.min(1, (dt * CFG.player.accel) / 2);
     this.vz += (z * speed - this.vz) * Math.min(1, (dt * CFG.player.accel) / 2);

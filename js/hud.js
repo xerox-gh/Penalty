@@ -6,10 +6,12 @@ export class HUD {
   update(g) {
     const s = g.state.name;
     if (s !== this.lastState) {
+      document.getElementById("clubHub").hidden = s !== "hub";
       document.getElementById("menu").hidden = s !== "menu";
       document.getElementById("pause").hidden = s !== "paused";
       document.getElementById("fulltime").hidden = s !== "fulltime";
-      document.getElementById("hud").hidden = s === "menu" || s === "fulltime";
+      document.getElementById("hud").hidden =
+        s === "hub" || s === "menu" || s === "fulltime";
       document.getElementById("touch").hidden =
         !g.input.isTouch || s !== "playing";
       this.lastState = s;

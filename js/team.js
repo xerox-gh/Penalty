@@ -1,14 +1,14 @@
 import { Player } from "./player.js";
 import { CFG, distance } from "./config.js";
 export class Team {
-  constructor(scene, id, color, formation) {
+  constructor(scene, id, color, formation, roster = []) {
     this.id = id;
     this.dir = id === 0 ? 1 : -1;
     this.score = 0;
     this.active = 1;
     this.players = Array.from(
       { length: 5 },
-      (_, i) => new Player(scene, id, i, color),
+      (_, i) => new Player(scene, id, i, color, roster[i]),
     );
     this.formation = formation;
     this.reset();

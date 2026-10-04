@@ -99,6 +99,8 @@ export class Rules {
     g.notice = "";
   }
   finish() {
+    if (this.g.state.name === "fulltime") return;
+    this.g.onMatchFinished?.();
     this.g.state.set("fulltime");
     this.g.audio.play("whistle");
   }

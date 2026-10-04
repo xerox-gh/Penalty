@@ -796,3 +796,392 @@ details {
     max-height: 94dvh;
   }
 }
+/* Offline club hub */
+#clubHub {
+  position: fixed;
+  inset: 0;
+  z-index: 12;
+  background: linear-gradient(120deg, #071522f5, #132b3df0);
+  overflow: auto;
+  color: #ecf3f7;
+  padding: 26px max(24px, calc((100vw - 1220px) / 2));
+  font-family: Arial, sans-serif;
+}
+.clubHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 22px;
+}
+.clubHeader > b {
+  font-size: 23px;
+  font-style: italic;
+}
+.clubHeader > div {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+}
+.clubHeader strong {
+  color: #c9f579;
+  font-size: 23px;
+}
+.clubHeader small {
+  font-size: 10px;
+}
+.clubTabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid #ffffff25;
+  padding-bottom: 12px;
+  overflow-x: auto;
+}
+.clubTabs button {
+  white-space: nowrap;
+  background: transparent;
+  border: 0;
+  font-size: 13px;
+  padding: 14px 18px;
+}
+.clubTabs [aria-current="page"] {
+  background: #c9f579;
+  color: #122330;
+}
+.xpTrack {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  margin-top: 16px;
+}
+.xpTrack progress {
+  width: 190px;
+  height: 5px;
+}
+.xpTrack small,
+.clubStatus {
+  font-size: 11px;
+  color: #acc1d2;
+  letter-spacing: 1px;
+}
+.clubStatus {
+  min-height: 16px;
+}
+.clubIntro {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  margin: 30px 0;
+}
+.clubIntro h1 {
+  font-size: clamp(48px, 7vw, 88px);
+  line-height: 0.93;
+  margin: 15px 0;
+  letter-spacing: -4px;
+  font-style: italic;
+}
+.clubIntro label {
+  width: 240px;
+}
+.clubIntro p,
+.clubBody p {
+  color: #b9cbd8;
+  line-height: 1.6;
+}
+.modeCards,
+.questGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+.modeCards article {
+  background: linear-gradient(145deg, #25485c, #142c3b);
+  padding: 26px;
+  border-top: 3px solid #c9f579;
+  display: flex;
+  flex-direction: column;
+}
+.modeCards article:nth-child(2) {
+  border-color: #b4a0ec;
+}
+.modeCards article:nth-child(3) {
+  border-color: #88cbea;
+}
+.modeCards h2 {
+  font-size: 26px;
+}
+.modeCards button {
+  margin-top: auto;
+}
+.clubBody h2 {
+  margin-top: 30px;
+}
+.clubBody button,
+.pendingMatch button {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  min-height: 44px;
+}
+.clubBody button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.sectionHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+.quest {
+  padding: 22px;
+  background: #ffffff07;
+  border: 1px solid #ffffff17;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.quest h3,
+.quest p {
+  margin: 0;
+}
+.quest small {
+  color: #c9f579;
+}
+.quest progress {
+  height: 5px;
+  width: 100%;
+}
+.quest button {
+  margin-top: auto;
+}
+.cardGrid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 14px;
+  margin: 24px 0;
+}
+.playerCard {
+  background: linear-gradient(150deg, #637d89, #213a48);
+  border: 1px solid #879fac;
+  border-radius: 8px 8px 22px 22px;
+  padding: 12px;
+  text-align: center;
+  overflow: hidden;
+}
+.playerCard.rare {
+  background: linear-gradient(150deg, #326fab, #102f55);
+  border-color: #58a8e9;
+}
+.playerCard.elite {
+  background: linear-gradient(150deg, #8753a6, #35244f);
+  border-color: #c987f0;
+}
+.playerCard.legend {
+  background: linear-gradient(150deg, #a78a43, #443723);
+  border-color: #e5c66f;
+}
+.playerCard.locked {
+  opacity: 0.32;
+  filter: grayscale(0.8);
+}
+.cardTop {
+  display: flex;
+  gap: 10px;
+  text-align: left;
+  align-items: center;
+}
+.cardTop b {
+  font-size: 30px;
+}
+.cardTop span {
+  font-size: 12px;
+}
+.cardTop small {
+  display: block;
+}
+.playerCard svg {
+  width: 100%;
+  max-height: 115px;
+}
+.playerCard h3 {
+  font-size: 14px;
+  margin: 6px 0;
+}
+.cardStats {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  border-block: 1px solid #fff3;
+  padding: 8px 0;
+  margin: 8px 0;
+}
+.playerCard > small {
+  font-size: 8px;
+}
+.squadSlots {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+}
+.squadSlots label {
+  font-size: 11px;
+}
+.packReveal {
+  background: #c9f57910;
+  border: 1px solid #c9f579;
+  padding: 18px;
+}
+.packReveal .cardGrid {
+  grid-template-columns: repeat(3, minmax(0, 180px));
+  justify-content: center;
+}
+.tableScroll {
+  overflow: auto;
+}
+#clubHub table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 14px;
+}
+#clubHub th,
+#clubHub td {
+  padding: 15px 12px;
+  border-bottom: 1px solid #ffffff16;
+  white-space: nowrap;
+}
+#clubHub th {
+  font-size: 10px;
+  color: #abc0ce;
+}
+.yourClub {
+  background: #c9f57919;
+  color: #c9f579;
+}
+.resultsList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.resultsList span {
+  background: #ffffff08;
+  padding: 14px;
+}
+.kitSwatch {
+  width: 86px;
+  height: 84px;
+  background: var(--kit);
+  color: #132437;
+  display: grid;
+  place-content: center;
+  font-weight: 900;
+  clip-path: polygon(
+    25% 0,
+    40% 10%,
+    60% 10%,
+    75% 0,
+    100% 25%,
+    85% 45%,
+    75% 35%,
+    75% 100%,
+    25% 100%,
+    25% 35%,
+    15% 45%,
+    0 25%
+  );
+}
+.backupActions {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+.fileLabel {
+  border: 1px solid #fff4;
+  padding: 14px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.fileLabel input {
+  max-width: 220px;
+  margin-top: 8px;
+}
+.pendingMatch {
+  padding: 16px;
+  background: #e4b55322;
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.pendingMatch span {
+  font-size: 12px;
+}
+.clubBody {
+  padding-bottom: 50px;
+}
+#rewards {
+  padding: 18px;
+  background: #c9f57912;
+  color: #c9f579;
+  line-height: 1.7;
+  margin: 18px 0;
+}
+#openClub {
+  margin-bottom: 16px;
+}
+#clubHub[hidden] {
+  display: none !important;
+}
+@media (max-width: 800px) {
+  #clubHub {
+    padding: 18px;
+  }
+  .cardGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .modeCards,
+  .questGrid {
+    grid-template-columns: 1fr;
+  }
+  .clubIntro {
+    display: block;
+  }
+  .clubIntro label {
+    display: block;
+    margin-top: 25px;
+  }
+  .clubHeader > div {
+    gap: 12px;
+    font-size: 10px;
+  }
+  .clubHeader > b {
+    font-size: 17px;
+  }
+  .clubHeader strong {
+    font-size: 18px;
+  }
+  .clubTabs button {
+    padding: 12px 9px;
+    font-size: 11px;
+  }
+  .squadSlots {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .sectionHeading {
+    display: block;
+  }
+  .xpTrack small {
+    font-size: 9px;
+  }
+  .backupActions {
+    align-items: start;
+    flex-direction: column;
+  }
+  .cardStats {
+    font-size: 8px;
+  }
+  .playerCard {
+    padding: 8px;
+  }
+}

@@ -11,6 +11,8 @@ import { Camera } from "./camera.js";
 import { HUD } from "./hud.js";
 import { Audio } from "./audio.js";
 import { State } from "./state.js";
+import { Club } from "./club.js";
+import { CARDS, CLUBS, KITS, CHALLENGES } from "./progression.js";
 const $ = (id) => document.getElementById(id);
 class Game {
   constructor() {
@@ -61,6 +63,7 @@ class Game {
     this.particles = new Particles(this.scene);
     this.ball = new Ball(this.scene, this.audio);
     this.camera = new Camera(innerWidth / innerHeight);
+    this.club = new Club(this);
     this.makeTeams();
     this.ball.boardsEnabled = false;
     this.rules = new Rules(this);
@@ -105,6 +108,7 @@ class Game {
       if (
         document.hidden &&
         this.state.name !== "menu" &&
+        this.state.name !== "hub" &&
         this.state.name !== "fulltime" &&
         this.state.name !== "paused"
       )
@@ -112,7 +116,7 @@ class Game {
     });
     $("setup").onsubmit = (e) => {
       e.preventDefault();
-      this.start();
+      this.startMode("quick");
     };
     $("resume").onclick = () => {
       this.audio.start();
@@ -120,10 +124,13 @@ class Game {
     };
     $("pauseButton").onclick = () => this.state.pause();
     $("quit").onclick = () => {
-      this.state.set("menu");
+      this.club.show();
       this.notice = "";
     };
-    $("again").onclick = () => this.start();
+    $("again").onclick = () =>
+      this.match?.kind === "quick" ? this.startMode("quick") : this.club.show();
+    $("openClub").onclick = $("backClub").onclick = () => this.club.show();
+    this.club.show();
     $("mute").onclick = () => this.audio.toggle();
     $("volume").oninput = (e) => this.audio.setVolume(+e.target.value);
     $("boot").textContent = "READY TO PLAY • Local match / 5 v 5";
@@ -146,7 +153,13 @@ class Game {
           p.kit.dispose();
         }
     this.teams = [
-      new Team(this.scene, 0, this.options.homeColor, this.options.formation),
+      new Team(
+        this.scene,
+        0,
+        this.options.homeColor,
+        this.options.formation,
+        this.club.save.data.squad.map((id) => CARDS.find((c) => c.id === id)),
+      ),
       new Team(this.scene, 1, this.options.awayColor, this.options.formation),
     ];
     this.players = this.teams.flatMap((t) => t.players);
@@ -175,6 +188,29 @@ class Game {
     this.camera.camera.aspect = innerWidth / innerHeight;
     this.camera.camera.updateProjectionMatrix();
   }
+  startMode(kind, challenge) {
+    try {
+      this.match = kind
+        ? this.club.save.begin(kind, challenge)
+        : this.club.save.data.pending;
+      if (!this.match) return;
+      this.start();
+    } catch (e) {
+      this.club.message = e.message;
+      this.club.show();
+    }
+  }
+  onMatchFinished() {
+    const reward = this.club.save.complete(this.match?.id, {
+      gf: this.teams[0].score,
+      ga: this.teams[1].score,
+      passes: this.matchStats.passes,
+      shots: this.matchStats.shots,
+    });
+    if (reward)
+      $("rewards").textContent =
+        `+${reward.coins} COINS · +${reward.xp} XP · +${reward.packs} PACKS. ${reward.notes.join(" ")}`;
+  }
   start() {
     for (const k of [
       "home",
@@ -191,6 +227,32 @@ class Game {
     this.options.away = this.options.away.trim() || "AWAY";
     this.options.duration = +$("duration").value;
     for (const k of ["golden", "local", "auto"]) this.options[k] = $(k).checked;
+    if (this.match.kind !== "quick") {
+      const d = this.club.save.data,
+        rival = CLUBS[this.match.opponent];
+      Object.assign(this.options, {
+        home: d.clubName,
+        away: rival.name,
+        homeColor: KITS.find((k) => k.id === d.kit).color,
+        awayColor: rival.color,
+        duration: 120,
+        local: false,
+        golden: this.match.kind === "cup",
+        difficulty:
+          this.match.kind === "career"
+            ? ["Hard", "Medium", "Easy"][d.career.division - 1]
+            : "Medium",
+      });
+      if (this.options.homeColor === this.options.awayColor)
+        this.options.awayColor = "#e44a58";
+      if (this.match.kind === "challenge")
+        this.options.duration = CHALLENGES.find(
+          (c) => c.id === this.match.challenge,
+        ).duration;
+    }
+    this.matchStats = { passes: 0, shots: 0 };
+    this.passIntent = null;
+    $("rewards").textContent = "";
     this.audio.start();
     this.audio.play("ui");
     this.input.clear();
@@ -216,6 +278,10 @@ class Game {
     this.notice = "";
     this.aiTime = 0;
     this.rules.kickoff();
+    if (this.match.kind === "challenge")
+      this.teams[1].score = CHALLENGES.find(
+        (c) => c.id === this.match.challenge,
+      ).awayGoals;
     this.state.set("lineup", CFG.match.lineup);
   }
   human(team, dt, second = false) {
@@ -245,13 +311,17 @@ class Game {
           p,
           shotX,
           shotZ,
-          (18 + p.charge * 16) * (c.precision ? CFG.control.finessePower : 1),
+          (18 + p.charge * 16) *
+            p.shotBoost *
+            (c.precision ? CFG.control.finessePower : 1),
           c.precision ? 2.6 : 0.6 + p.charge * 3.2,
           c.precision
             ? -Math.sign(shotZ || p.z || 1) * team.dir * CFG.control.finesseSpin
             : (p.vz * p.dx - p.vx * p.dz) * 0.7,
         )
       ) {
+        if (team.id === 0) this.matchStats.shots++;
+        this.passIntent = null;
         this.camera.shake = 0.5;
         this.particles.burst(p.x, p.z, 8);
       }
@@ -271,10 +341,11 @@ class Game {
           p,
           target.x - p.x,
           target.z - p.z,
-          Math.min(27, distance(p, target) * 1.1 + 7),
+          Math.min(27, distance(p, target) * 1.1 + 7) * p.passBoost,
           c.throughEdge ? 0.6 : 0,
         )
       ) {
+        if (team.id === 0) this.passIntent = { from: p.index, ttl: 4 };
         team.active = target.player.index;
         team.passLock = 1.5;
         if (c.sprint) {
@@ -307,7 +378,8 @@ class Game {
   step(dt) {
     this.time += dt;
     const s = this.state.name;
-    if (s === "menu" || s === "paused" || s === "fulltime") return;
+    if (s === "hub" || s === "menu" || s === "paused" || s === "fulltime")
+      return;
     this.state.tick(dt);
     if (s === "lineup") {
       if (!this.state.timer) this.state.set("countdown", CFG.match.countdown);
@@ -325,6 +397,7 @@ class Game {
       this.particles.update(dt);
       if (!this.state.timer) {
         if (
+          (this.match?.challenge === "three" && this.teams[0].score >= 3) ||
           this.rules.golden ||
           (this.rules.elapsed >= this.options.duration &&
             this.teams[0].score !== this.teams[1].score)
@@ -393,8 +466,20 @@ class Game {
           );
         }
       }
+    if (this.passIntent) {
+      this.passIntent.ttl -= dt;
+      if (this.passIntent.ttl <= 0) this.passIntent = null;
+    }
     const previousOwner = this.ball.owner;
     this.ball.update(dt, this.players);
+    if (this.passIntent && this.ball.owner) {
+      if (
+        this.ball.owner.team === 0 &&
+        this.ball.owner.index !== this.passIntent.from
+      )
+        this.matchStats.passes++;
+      this.passIntent = null;
+    }
     if (
       this.ball.owner &&
       this.ball.owner !== previousOwner &&
@@ -448,13 +533,16 @@ class Game {
       r.position.set(p.x, 0.07, p.z);
       this.markers[i].position.set(p.x, 2.3, p.z);
       this.markers[i].visible =
-        this.state.name !== "menu" && (i === 0 || this.options.local);
-      r.visible = this.state.name !== "menu" && (i === 0 || this.options.local);
+        !["menu", "hub"].includes(this.state.name) &&
+        (i === 0 || this.options.local);
+      r.visible =
+        !["menu", "hub"].includes(this.state.name) &&
+        (i === 0 || this.options.local);
     });
     this.camera.update(
       this.ball,
       this.teams[0].players[this.teams[0].active],
-      this.state.name,
+      this.state.name === "hub" ? "menu" : this.state.name,
       this.time,
       dt,
     );
