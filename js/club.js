@@ -1,6 +1,8 @@
 import {
   Progression,
   CARDS,
+  SHOP_CARDS,
+  QUICK_SELL,
   PACKS,
   RARITIES,
   CLUBS,
@@ -94,13 +96,15 @@ export class Club {
       } else if (verb === "abandon") {
         this.save.abandon();
         this.message = "Unfinished match abandoned. No rewards awarded.";
+      } else if (verb === "sell") {
+        this.message = `Player quick-sold for ${this.save.sellCard(id)} coins.`;
       } else if (verb === "buy") {
         this.reveal = this.save.buyPack(id);
-        this.message = `${PACKS.find((p) => p.id === id).name} opened. Three cards added; duplicates refund 20 coins each.`;
+        this.message = `${PACKS.find((p) => p.id === id).name} opened. ${this.reveal.length} cards opened; duplicates quick-sold at their tier value.`;
       } else if (verb === "pack") {
         this.reveal = this.save.openPack();
         this.message =
-          "Three players revealed. Duplicates convert to 20 coins each.";
+          "Three players revealed. Duplicates quick-sold at their tier value.";
       } else if (verb === "claim" || verb === "contract") {
         const r = this.save.claim(id, verb === "contract");
         this.message = `Claimed +${r.coins} coins, +${r.xp} XP${r.packs ? `, +${r.packs} packs` : ""}.`;
@@ -122,17 +126,19 @@ export class Club {
         this.message = "Backup downloaded.";
       }
       this.render();
+      if(verb === "buy" || verb === "pack") this.el.querySelector(".packReveal")?.scrollIntoView({block:"start"});
     } catch (e) {
       this.message = e.message;
       this.render();
     }
   }
   card(c, owned = true, duplicate = false) {
+    owned = owned && this.save.data.owned.includes(c.id);
     const skin = ["#dab08c", "#8e6045", "#e6bb97", "#624333", "#b77e58"][
         c.appearance % 5
       ],
       hair = ["#29231f", "#784a2d", "#d9b36e"][c.appearance % 3];
-    return `<article class="playerCard ${c.rarity.toLowerCase()} ${owned ? "" : "locked"}"><div class="cardTop"><b>${c.rating}</b><span>${c.position}<small>${c.rarity}</small></span></div><svg viewBox="0 0 160 115" aria-hidden="true"><path d="M20 115L30 75 61 63H99L131 76 141 115" fill="${KITS.find((k) => k.id === this.save.data.kit).color}"/><path d="M65 65L80 82 96 65" fill="#172e45"/><path d="M69 53H92V72L80 77 69 70" fill="${skin}"/><path d="M53 18L65 6H96L109 22 103 50 89 64H73L58 50Z" fill="${skin}"/><path d="M53 29L51 16 65 3H98L110 19 106 31 96 20 67 17 57 36" fill="${hair}"/><path d="M63 35H72M88 35H97M76 51H88" stroke="#30251f" stroke-width="3"/><path d="M79 35L77 44H83" stroke="#0003" fill="none"/><path d="M111 87H119V97H111Z" fill="#e7c866"/></svg><h3>${c.name}</h3><div class="cardStats"><span>${c.pace} PAC</span><span>${c.shoot} SHO</span><span>${c.pass} PAS</span></div><small>${duplicate ? "DUPLICATE · +20 COINS" : owned ? "IN YOUR CLUB" : "NOT COLLECTED"}</small></article>`;
+    return `<article class="playerCard ${c.rarity.toLowerCase()} ${owned ? "" : "locked"}"><div class="cardTop"><b>${c.rating}</b><span>${c.position}<small>${c.rarity}</small></span></div><svg viewBox="0 0 160 115" aria-hidden="true"><path d="M20 115L30 75 61 63H99L131 76 141 115" fill="${KITS.find((k) => k.id === this.save.data.kit).color}"/><path d="M65 65L80 82 96 65" fill="#172e45"/><path d="M69 53H92V72L80 77 69 70" fill="${skin}"/><path d="M53 18L65 6H96L109 22 103 50 89 64H73L58 50Z" fill="${skin}"/><path d="M53 29L51 16 65 3H98L110 19 106 31 96 20 67 17 57 36" fill="${hair}"/><path d="M63 35H72M88 35H97M76 51H88" stroke="#30251f" stroke-width="3"/><path d="M79 35L77 44H83" stroke="#0003" fill="none"/><path d="M111 87H119V97H111Z" fill="#e7c866"/></svg><h3>${c.name}</h3><div class="cardStats"><span>${c.pace} PAC</span><span>${c.shoot} SHO</span><span>${c.pass} PAS</span></div><small>${duplicate ? `DUPLICATE · +${QUICK_SELL[c.rarity]} COINS` : owned ? (c.legacy ? "LEGACY · IN YOUR CLUB" : "IN YOUR CLUB") : "NOT COLLECTED"}</small>${owned && !duplicate && !this.save.data.squad.includes(c.id) ? button("sell:" + c.id, `QUICK SELL · ${QUICK_SELL[c.rarity]}`, !!this.save.data.pending) : ""}</article>`;
   }
   quest(q, contract = false) {
     const d = this.save.data,
@@ -164,7 +170,7 @@ export class Club {
         )}</tbody></table></div><h3>SEASON RESULTS</h3><div class="resultsList">${c.history.map((r) => `<span>${CLUBS[r.opponent].name} <b>${r.gf} – ${r.ga}</b></span>`).join("") || "<p>Your story starts at the first whistle.</p>"}</div>`;
     }
     if (this.tab === "squad") {
-      body = `<div class="sectionHeading"><div><span class="eyebrow">${d.owned.length} / ${CARDS.length} COLLECTED</span><h2>YOUR STARTING FIVE</h2><p>Cards change your players and grant small pace, shot and pass boosts.</p></div>${button("pack", `OPEN PACK · ${d.packs} AVAILABLE`, !d.packs)}</div>${this.reveal.length ? `<div class="packReveal"><h3>WELCOME TO THE CLUB</h3><div class="cardGrid">${this.reveal.map((c) => this.card(c, true, c.duplicate)).join("")}</div></div>` : ""}<div class="squadSlots">${d.squad
+      body = `<div class="sectionHeading"><div><span class="eyebrow">${SHOP_CARDS.filter((c) => d.owned.includes(c.id)).length} / ${SHOP_CARDS.length} GUIDE PLAYERS</span><h2>YOUR STARTING FIVE</h2><p>Cards change your players and grant small pace, shot and pass boosts.</p></div>${button("pack", `OPEN PACK · ${d.packs} AVAILABLE`, !d.packs)}</div>${this.reveal.length ? `<div class="packReveal"><h3>WELCOME TO THE CLUB</h3><div class="cardGrid">${this.reveal.map((c) => this.card(c, true, c.duplicate)).join("")}</div></div>` : ""}<div class="squadSlots">${d.squad
         .map(
           (id, i) =>
             `<label>${POSITIONS[i]}<select data-slot="${i}" ${locked ? "disabled" : ""}>${CARDS.filter(
@@ -176,15 +182,19 @@ export class Club {
               )
               .join("")}</select></label>`,
         )
+        .join("")}</div><div class="cardGrid">${CARDS.filter(
+        (c) => !c.legacy || d.owned.includes(c.id),
+      )
+        .map((c) => this.card(c, d.owned.includes(c.id)))
         .join(
           "",
-        )}</div><div class="cardGrid">${CARDS.map((c) => this.card(c, d.owned.includes(c.id))).join("")}</div><p>Every pack contains three cards and guarantees one new card until your album is complete. Duplicates become coins. Earn packs from quests, level-ups and trophies.</p>`;
+        )}</div><p>Earned reward packs contain three cards and guarantee one new guide player until your guide album is complete. Shop packs use their displayed card counts and odds. Duplicates become coins. Earn packs from quests, level-ups and trophies.</p>`;
     }
     if (this.tab === "shop") {
-      body = `<div class="sectionHeading"><div><span class="eyebrow">EARN IT ON THE PITCH</span><h2>THE PACK SHOP</h2><p>Spend your club coins. Every purchase opens three cards immediately.</p></div><strong>${d.coins} COINS</strong></div>
+      body = `<div class="sectionHeading"><div><span class="eyebrow">EARN IT ON THE PITCH</span><h2>THE PACK SHOP</h2><p>Spend your club coins. Each pack opens its listed number of cards immediately.</p></div><strong>${d.coins} COINS</strong></div>
       ${this.reveal.length ? `<div class="packReveal" aria-live="polite"><h3>YOUR NEW SIGNINGS</h3><div class="cardGrid">${this.reveal.map((c) => this.card(c, true, c.duplicate)).join("")}</div></div>` : ""}
-      <div class="shopGrid">${PACKS.map((p) => `<article class="shopPack ${p.id}"><div class="packArt"><span>P /</span><b>${p.name.toUpperCase()}</b><small>3 PLAYER CARDS</small></div><h3>${p.name}</h3><p>${p.description}</p><h4>CHANCE PER CARD</h4><ul class="packOdds">${RARITIES.map((r, i) => `<li><span>${r}</span><b>${p.odds[i]}%</b></li>`).join("")}</ul>${button("buy:" + p.id, `BUY & OPEN · ${p.cost} COINS`, d.coins < p.cost)}</article>`).join("")}</div>
-      <p>Chances apply independently to each of the three slots, including duplicates. Players within a rarity are equally likely. Pack names do not guarantee that rarity. Duplicates refund 20 coins. No real money or connection required.</p><p>Earned reward packs remain available in Squad & Cards and guarantee one unowned player while your collection is incomplete. Their draws are separate from shop odds.</p>`;
+      <div class="shopGrid">${PACKS.map((p) => `<article class="shopPack ${p.id}"><div class="packArt"><span>P /</span><b>${p.name.toUpperCase()}</b><small>${p.count} PLAYER CARDS</small></div><h3>${p.name}</h3><p>${p.description}</p><h4>CHANCE PER CARD</h4><ul class="packOdds">${RARITIES.map((r, i) => `<li><span>${r}</span><b>${p.odds[i]}%</b></li>`).join("")}</ul>${button("buy:" + p.id, `BUY & OPEN · ${p.cost} COINS`, d.coins < p.cost)}</article>`).join("")}</div>
+      <p>Chances apply independently to each slot, including duplicates. Players within a rarity are equally likely. Legacy cards are excluded from draws. Pack names do not guarantee that rarity. Duplicates automatically quick-sell for the tier value below. No real money or connection required.</p><div class="tableScroll"><table><thead><tr><th>TIER</th><th>QUICK SELL</th></tr></thead><tbody>${RARITIES.map((r) => `<tr><td>${r}</td><td>${QUICK_SELL[r].toLocaleString()} coins</td></tr>`).join("")}</tbody></table></div><p>Earned reward packs remain available in Squad & Cards and guarantee one unowned player while your collection is incomplete. Their draws are separate from shop odds.</p>`;
     }
     if (this.tab === "quests")
       body = `<span class="eyebrow">CONTRACT BOARD ${d.contracts.number}</span><h2>GIVE EVERY MATCH A PURPOSE</h2><p>Claim all three contracts to refresh the board. No timers. No daily login.</p><div class="questGrid">${CONTRACTS.map((q) => this.quest(q, true)).join("")}</div><h2>CLUB MILESTONES</h2><div class="questGrid">${QUESTS.map((q) => this.quest(q)).join("")}</div>`;

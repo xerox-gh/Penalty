@@ -1308,3 +1308,45 @@ details {
     font-size: 12px;
   }
 }
+.playerCard.rookie {
+  background: linear-gradient(140deg, #666e73, #292f35);
+  border-color: #899297;
+}
+.playerCard.champion {
+  background: linear-gradient(140deg, #a82845, #4a1d2a);
+  border-color: #e98499;
+}
+.playerCard.mythic {
+  background: linear-gradient(140deg, #252850, #443f91, #10494f);
+  border-color: #9ea0ff;
+}
+.playerCard.eternal {
+  background: linear-gradient(140deg, #effbff, #81dfce, #d2b86e);
+  border-color: #f8fff5;
+  color: #163d44;
+}
+.playerCard button {
+  font-size: 9px;
+  padding: 8px 4px;
+  margin-top: 10px;
+  width: 100%;
+  letter-spacing: 0;
+}
+.bronze .packArt {
+  background: linear-gradient(140deg, #a97548, #593723);
+}
+.silver .packArt {
+  background: linear-gradient(140deg, #cbd9df, #647782);
+}
+.gold .packArt {
+  background: linear-gradient(140deg, #dfbd5c, #816129);
+}
+.premium .packArt {
+  background: linear-gradient(140deg, #8753a6, #292548);
+}
+.ultimate .packArt {
+  background: linear-gradient(140deg, #182537, #32898e, #b79949);
+}
+.packReveal .cardGrid {
+  grid-template-columns: repeat(auto-fit, minmax(140px, 180px));
+}

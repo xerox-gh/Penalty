@@ -5,6 +5,7 @@ import {
   SCHEDULE,
   validateSave,
   CARDS,
+  SHOP_CARDS,
 } from "../js/progression.js";
 class Storage {
   constructor() {
@@ -111,13 +112,13 @@ denied.openPack();
 assert.match(denied.message, /only in this tab/);
 assert.ok(denied.export());
 // Guarantee completion without buying packs. Rewards earned from repeated matches.
-while (p.data.owned.length < CARDS.length) {
+while (!SHOP_CARDS.every((c) => p.data.owned.includes(c.id))) {
   if (!p.data.packs) {
     m = p.begin("quick");
     p.complete(m.id, { gf: 3, ga: 0, passes: 0, shots: 3 });
   } else p.openPack();
 }
-assert.equal(p.data.owned.length, CARDS.length);
+assert.ok(SHOP_CARDS.every((c) => p.data.owned.includes(c.id)));
 validateSave(p.data);
 console.log(
   "PASS: fixtures, season/promotion, cup, challenges, quests, packs, squad, kits, persistence, backup validation, duplicate rewards and storage failures.",

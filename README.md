@@ -44,8 +44,8 @@ The title screen now opens your club hub:
 - **Career:** a six-club, ten-match season, league table and results. Finish in the top two to progress from Division 3 to Division 1. Difficulty rises with division. Season champions collect a trophy.
 - **Knockout cup:** quarter-final, semi-final and final, with golden goal and a trophy for three wins.
 - **Challenges:** come back from 0–2, win without conceding, or score three in 90 seconds. First completions award badges and bonus packs.
-- **Squad & cards:** 52 fictional players across seven rarities. Equip owned cards in five position-specific slots. Card attributes grant modest pace, shot-power and pass-speed bonuses (roughly 0–7%). Packs contain three cards, guarantee one new card while the album is incomplete, and turn duplicates into 20 coins.
-- **Quests:** eleven one-time milestones and three repeating contracts. Claim all contracts to refresh the board. Match rewards, quests and level-ups earn coins, XP and packs; every 300 XP grants a pack.
+- **Squad & cards:** 112 guide players across eleven rarities, plus retained legacy cards. Equip owned cards in five position-specific slots. Card attributes grant modest pace, shot-power and pass-speed bonuses (roughly 0–7%). Earned reward packs contain three cards, guarantee one new card while the album is incomplete, and quick-sell duplicates at their tier value.
+- **Quests:** twelve one-time milestones and three repeating contracts. Claim all contracts to refresh the board. Match rewards, quests and level-ups earn coins, XP and packs; every 300 XP grants a pack.
 - **My club:** unlock five kit colors with earned coins, view trophies and records, and export/import your save.
 
 Players now have varied hair styles/colors, faces, ears, collars, cuffs, crests, detailed boots, keeper gloves and named/numbered shirts. Geometry and most materials remain shared.
@@ -56,24 +56,42 @@ Leaving a match or reloading keeps the pending fixture. Resume restarts it from 
 
 Tune the catalog, rewards, challenges and fixtures in `js/progression.js`; `js/club.js` contains the hub. Card attribute multipliers are in `js/player.js`. The save schema is versioned; changing it requires a migration or a new save key.
 
-## Coin pack shop
+## Coin pack shop: spreadsheet guide
 
-Open **Pack Shop** in the club tabs. Buying immediately opens three cards and saves the coin deduction, cards and duplicate refunds together. All prices use earned in-game coins; there are no payments or online services.
+The shop follows the supplied `pack_shop_draft.xlsx` (Packs, Drop Rates, Tiers and Players). The 112 listed players have the exact supplied names, positions, ratings and rarities. `js/shop-guide.js` contains the transcribed data; no spreadsheet engine or download is needed at runtime.
 
-| Pack | Coins | Club | Rare | Elite | Legend | Heroes | Icon | Glory |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|
-| Club | 150 | 65% | 25% | 8% | 2% | 0% | 0% | 0% |
-| Elite | 450 | 0% | 25% | 35% | 25% | 12% | 2.5% | 0.5% |
-| Heroes | 1,000 | 0% | 0% | 15% | 25% | 45% | 12% | 3% |
-| Glory | 2,400 | 0% | 0% | 0% | 15% | 25% | 35% | 25% |
+| Pack | Coins | Cards |Rookie|Club|Rare|Elite|Champion|Legend|Heroes|Icon|Mythic|Glory|Eternal|
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+|Bronze Pack|500|3|45%|35%|15%|4.5%|0.5%|0%|0%|0%|0%|0%|0%|
+|Silver Pack|1,500|4|15%|35%|30%|15%|4%|1%|0%|0%|0%|0%|0%|
+|Gold Pack|4,000|5|0%|15%|35%|30%|14%|5%|0.9%|0.1%|0%|0%|0%|
+|Premium Pack|10,000|5|0%|0%|20%|35%|25%|14%|4%|1.5%|0.5%|0%|0%|
+|Ultimate Pack|25,000|5|0%|0%|0%|22%|32%|25%|13%|6%|1.5%|0.4%|0.1%|
+|Glory Pack|75,000|3|0%|0%|0%|0%|10%|25%|25%|20%|12%|6%|2%|
 
-These are independent **per-card** rarity probabilities, not the chance of getting at least one in a pack. Players within a rarity are equally likely. Shop packs have no unowned-card guarantee; each duplicate refunds 20 coins. Earned packs retain their existing one-new-card guarantee and now draw from all 52 cards, so special cards are also obtainable without buying packs.
+Every slot rolls independently, then uniformly selects a player in the chosen tier. Displayed odds include duplicates and are per card, not per pack. Purchases open immediately and save the deduction, cards and duplicate refunds in one transaction. No real money or network connection is involved.
 
-The original 24 Club–Legend cards are joined by the supplied 10 Heroes (84–89), 10 Icons (90–97) and 8 Glory players (94–99), with their exact names, positions and overall ratings. Special tiers have distinct card designs. Existing saves, squads, coin balances, earned packs and claimed 24-card milestones are preserved; collecting all 52 unlocks a new milestone.
+| Tier | Players | OVR | Quick-sell coins |
+|---|---:|---|---:|
+|Rookie|6|55–64|25|
+|Club|10|65–69|75|
+|Rare|10|70–74|200|
+|Elite|10|75–81|600|
+|Champion|16|82–85|1,500|
+|Legend|10|86–89|3,500|
+|Heroes|10|84–89|7,000|
+|Icon|10|90–97|15,000|
+|Mythic|14|95–97|30,000|
+|Glory|8|94–99|60,000|
+|Eternal|8|99–100|150,000|
 
-Desktop and mobile-emulated Chromium checks verified shop prices/buttons, three-card reveals, the 52-card collection, persisted balances and purchases after an offline reload, with no console errors or missing assets.
+Duplicates automatically quick-sell at the listed tier value. An owned player outside your starting five can also be quick-sold from their card. Starting players must be replaced before selling; selling is disabled while a match is pending.
 
-Tune `PACKS` in `js/progression.js` to change prices and odds. Run `node tests/shop.mjs` to check every probability interval, purchase deductions/refunds, rejected purchases, card counts, save compatibility and special-card squad selection.
+Previously collected players remain usable. The original 24 cards are marked Legacy and do not dilute the spreadsheet's draw pools; unowned legacy cards are hidden. The 28 previously added special players retain their IDs. Existing coins, squads, saves, earned packs and claimed milestones remain compatible. The collection counter and new 112-player milestone count guide players only.
+
+Earned reward packs remain three-card packs with one guaranteed unowned guide player while the guide album is incomplete. They are separate from shop odds. The spreadsheet's 150 coins per match is a planning assumption, so actual match/quest earnings remain unchanged.
+
+`tests/shop.mjs` checks every odds interval, guide prices/card counts, all six expected quick-sell returns, duplicate refunds, insufficient funds, selling restrictions, save compatibility and equipping special cards. Desktop/mobile-emulated browser checks cover reveals, offline purchases, persistence and quick-selling. Real-device checks remain outstanding.
 
 ## Controls
 

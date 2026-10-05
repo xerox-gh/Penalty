@@ -1,3 +1,4 @@
+import { GUIDE } from "./shop-guide.js";
 // Offline-only metagame. No clock-based rewards, real-money purchases, requests or accounts.
 export const SAVE_KEY = "penalty.club.v1";
 export const POSITIONS = ["GK", "DEF", "MID", "MID", "FWD"];
@@ -43,15 +44,6 @@ export const CARDS = names.map((name, i) => {
   };
 });
 // Stable IDs preserve existing collections and backups when the catalog expands.
-export const RARITIES = [
-  "Club",
-  "Rare",
-  "Elite",
-  "Legend",
-  "Heroes",
-  "Icon",
-  "Glory",
-];
 const specialRosters = {
   Heroes: [
     ["Tomas Vreld", "FWD", 89],
@@ -104,38 +96,27 @@ for (const [rarity, roster] of Object.entries(specialRosters)) {
     });
   });
 }
-// Each shop slot independently rolls a rarity, then a uniform card in that rarity.
-// No hidden guarantees: the exact per-slot percentages are displayed in the shop.
-export const PACKS = [
-  {
-    id: "club",
-    name: "Club Pack",
-    cost: 150,
-    odds: [65, 25, 8, 2, 0, 0, 0],
-    description: "Build your foundations. Club through Legend.",
-  },
-  {
-    id: "elite",
-    name: "Elite Pack",
-    cost: 450,
-    odds: [0, 25, 35, 25, 12, 2.5, 0.5],
-    description: "Rare or better, with a chance at the special tiers.",
-  },
-  {
-    id: "heroes",
-    name: "Heroes Pack",
-    cost: 1000,
-    odds: [0, 0, 15, 25, 45, 12, 3],
-    description: "Elite or better. The best chance to recruit a Hero.",
-  },
-  {
-    id: "glory",
-    name: "Glory Pack",
-    cost: 2400,
-    odds: [0, 0, 0, 15, 25, 35, 25],
-    description: "Legend or better. Chase Icons and Glory players.",
-  },
-];
+export const RARITIES = GUIDE.tiers.map((t) => t.name);
+export const QUICK_SELL = Object.fromEntries(
+  GUIDE.tiers.map((t) => [t.name, t.sell]),
+);
+const previousCards = [...CARDS];
+export const SHOP_CARDS = GUIDE.players.map((p, i) => {
+  const existing = previousCards.find((c) => c.name === p.name);
+  return {
+    ...p,
+    id: existing?.id || `guide${i + 1}`,
+    pace: Math.min(100, p.rating + (i % 3) - 1),
+    shoot: Math.min(100, p.rating + (i % 4) - 1),
+    pass: Math.min(100, p.rating + 1 - (i % 3)),
+    appearance: existing?.appearance ?? i + 52,
+  };
+});
+const legacy = previousCards
+  .filter((c) => !SHOP_CARDS.some((p) => p.id === c.id))
+  .map((c) => ({ ...c, legacy: true }));
+CARDS.splice(0, CARDS.length, ...SHOP_CARDS, ...legacy);
+export const PACKS = GUIDE.packs;
 export function drawShopCard(pack, random) {
   let roll = random() * 100,
     rarity = RARITIES.at(-1);
@@ -146,7 +127,7 @@ export function drawShopCard(pack, random) {
       break;
     }
   }
-  const pool = CARDS.filter((c) => c.rarity === rarity);
+  const pool = SHOP_CARDS.filter((c) => c.rarity === rarity);
   return pool[Math.floor(random() * pool.length)];
 }
 export const CLUBS = [
@@ -283,10 +264,19 @@ export const QUESTS = [
 ];
 QUESTS.push({
   id: "fullalbum",
-  title: "The complete collection",
+  title: "Collect 52 players",
   stat: "collection",
-  target: CARDS.length,
+  target: 52,
   coins: 1500,
+  xp: 500,
+  packs: 3,
+});
+QUESTS.push({
+  id: "guidealbum",
+  title: "Collect all 112 guide players",
+  stat: "guideCollection",
+  target: 112,
+  coins: 5000,
   xp: 500,
   packs: 3,
 });
@@ -602,6 +592,8 @@ export class Progression {
     return result;
   }
   progress(q, contract = false) {
+    if (q.stat === "guideCollection")
+      return SHOP_CARDS.filter((c) => this.data.owned.includes(c.id)).length;
     if (q.stat === "collection") return this.data.owned.length;
     return Math.max(
       0,
@@ -690,11 +682,11 @@ export class Progression {
         return d.rng / 4294967296;
       };
       for (let i = 0; i < 3; i++) {
-        const missing = CARDS.filter((c) => !d.owned.includes(c.id)),
-          pool = i === 0 && missing.length ? missing : CARDS;
+        const missing = SHOP_CARDS.filter((c) => !d.owned.includes(c.id)),
+          pool = i === 0 && missing.length ? missing : SHOP_CARDS;
         const card = pool[Math.floor(rand() * pool.length)],
           duplicate = d.owned.includes(card.id);
-        if (duplicate) d.coins += 20;
+        if (duplicate) d.coins += QUICK_SELL[card.rarity];
         else d.owned.push(card.id);
         result.push({ ...card, duplicate });
       }
@@ -713,13 +705,28 @@ export class Progression {
         d.rng = (Math.imul(d.rng, 1664525) + 1013904223) >>> 0;
         return d.rng / 4294967296;
       };
-      return Array.from({ length: 3 }, () => {
+      return Array.from({ length: pack.count }, () => {
         const card = drawShopCard(pack, random),
           duplicate = d.owned.includes(card.id);
-        if (duplicate) d.coins += 20;
+        if (duplicate) d.coins += QUICK_SELL[card.rarity];
         else d.owned.push(card.id);
         return { ...card, duplicate };
       });
+    });
+  }
+  sellCard(id) {
+    return this.change((d) => {
+      need(!d.pending, "Finish or abandon the match before selling players.");
+      need(d.owned.includes(id), "You do not own this card.");
+      need(
+        !d.squad.includes(id),
+        "Equip a replacement before selling a starting player.",
+      );
+      const card = CARDS.find((c) => c.id === id),
+        coins = QUICK_SELL[card.rarity];
+      d.owned = d.owned.filter((c) => c !== id);
+      d.coins += coins;
+      return coins;
     });
   }
   begin(kind, challenge) {
