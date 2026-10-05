@@ -1,6 +1,8 @@
 import {
   Progression,
   CARDS,
+  PACKS,
+  RARITIES,
   CLUBS,
   KITS,
   CHALLENGES,
@@ -92,6 +94,9 @@ export class Club {
       } else if (verb === "abandon") {
         this.save.abandon();
         this.message = "Unfinished match abandoned. No rewards awarded.";
+      } else if (verb === "buy") {
+        this.reveal = this.save.buyPack(id);
+        this.message = `${PACKS.find((p) => p.id === id).name} opened. Three cards added; duplicates refund 20 coins each.`;
       } else if (verb === "pack") {
         this.reveal = this.save.openPack();
         this.message =
@@ -159,7 +164,7 @@ export class Club {
         )}</tbody></table></div><h3>SEASON RESULTS</h3><div class="resultsList">${c.history.map((r) => `<span>${CLUBS[r.opponent].name} <b>${r.gf} – ${r.ga}</b></span>`).join("") || "<p>Your story starts at the first whistle.</p>"}</div>`;
     }
     if (this.tab === "squad") {
-      body = `<div class="sectionHeading"><div><span class="eyebrow">${d.owned.length} / 24 COLLECTED</span><h2>YOUR STARTING FIVE</h2><p>Cards change your players and grant small pace, shot and pass boosts.</p></div>${button("pack", `OPEN PACK · ${d.packs} AVAILABLE`, !d.packs)}</div>${this.reveal.length ? `<div class="packReveal"><h3>WELCOME TO THE CLUB</h3><div class="cardGrid">${this.reveal.map((c) => this.card(c, true, c.duplicate)).join("")}</div></div>` : ""}<div class="squadSlots">${d.squad
+      body = `<div class="sectionHeading"><div><span class="eyebrow">${d.owned.length} / ${CARDS.length} COLLECTED</span><h2>YOUR STARTING FIVE</h2><p>Cards change your players and grant small pace, shot and pass boosts.</p></div>${button("pack", `OPEN PACK · ${d.packs} AVAILABLE`, !d.packs)}</div>${this.reveal.length ? `<div class="packReveal"><h3>WELCOME TO THE CLUB</h3><div class="cardGrid">${this.reveal.map((c) => this.card(c, true, c.duplicate)).join("")}</div></div>` : ""}<div class="squadSlots">${d.squad
         .map(
           (id, i) =>
             `<label>${POSITIONS[i]}<select data-slot="${i}" ${locked ? "disabled" : ""}>${CARDS.filter(
@@ -175,6 +180,12 @@ export class Club {
           "",
         )}</div><div class="cardGrid">${CARDS.map((c) => this.card(c, d.owned.includes(c.id))).join("")}</div><p>Every pack contains three cards and guarantees one new card until your album is complete. Duplicates become coins. Earn packs from quests, level-ups and trophies.</p>`;
     }
+    if (this.tab === "shop") {
+      body = `<div class="sectionHeading"><div><span class="eyebrow">EARN IT ON THE PITCH</span><h2>THE PACK SHOP</h2><p>Spend your club coins. Every purchase opens three cards immediately.</p></div><strong>${d.coins} COINS</strong></div>
+      ${this.reveal.length ? `<div class="packReveal" aria-live="polite"><h3>YOUR NEW SIGNINGS</h3><div class="cardGrid">${this.reveal.map((c) => this.card(c, true, c.duplicate)).join("")}</div></div>` : ""}
+      <div class="shopGrid">${PACKS.map((p) => `<article class="shopPack ${p.id}"><div class="packArt"><span>P /</span><b>${p.name.toUpperCase()}</b><small>3 PLAYER CARDS</small></div><h3>${p.name}</h3><p>${p.description}</p><h4>CHANCE PER CARD</h4><ul class="packOdds">${RARITIES.map((r, i) => `<li><span>${r}</span><b>${p.odds[i]}%</b></li>`).join("")}</ul>${button("buy:" + p.id, `BUY & OPEN · ${p.cost} COINS`, d.coins < p.cost)}</article>`).join("")}</div>
+      <p>Chances apply independently to each of the three slots, including duplicates. Players within a rarity are equally likely. Pack names do not guarantee that rarity. Duplicates refund 20 coins. No real money or connection required.</p><p>Earned reward packs remain available in Squad & Cards and guarantee one unowned player while your collection is incomplete. Their draws are separate from shop odds.</p>`;
+    }
     if (this.tab === "quests")
       body = `<span class="eyebrow">CONTRACT BOARD ${d.contracts.number}</span><h2>GIVE EVERY MATCH A PURPOSE</h2><p>Claim all three contracts to refresh the board. No timers. No daily login.</p><div class="questGrid">${CONTRACTS.map((q) => this.quest(q, true)).join("")}</div><h2>CLUB MILESTONES</h2><div class="questGrid">${QUESTS.map((q) => this.quest(q)).join("")}</div>`;
     if (this.tab === "club")
@@ -183,6 +194,7 @@ export class Club {
       ["play", "PLAY"],
       ["career", "CAREER"],
       ["squad", "SQUAD & CARDS"],
+      ["shop", "PACK SHOP"],
       ["quests", "QUESTS"],
       ["club", "MY CLUB"],
     ]

@@ -44,17 +44,36 @@ The title screen now opens your club hub:
 - **Career:** a six-club, ten-match season, league table and results. Finish in the top two to progress from Division 3 to Division 1. Difficulty rises with division. Season champions collect a trophy.
 - **Knockout cup:** quarter-final, semi-final and final, with golden goal and a trophy for three wins.
 - **Challenges:** come back from 0–2, win without conceding, or score three in 90 seconds. First completions award badges and bonus packs.
-- **Squad & cards:** 24 fictional players across four rarities. Equip owned cards in five position-specific slots. Card attributes grant modest pace, shot-power and pass-speed bonuses (roughly 0–5%). Packs contain three cards, guarantee one new card while the album is incomplete, and turn duplicates into 20 coins.
-- **Quests:** ten one-time milestones and three repeating contracts. Claim all contracts to refresh the board. Match rewards, quests and level-ups earn coins, XP and packs; every 300 XP grants a pack.
+- **Squad & cards:** 52 fictional players across seven rarities. Equip owned cards in five position-specific slots. Card attributes grant modest pace, shot-power and pass-speed bonuses (roughly 0–7%). Packs contain three cards, guarantee one new card while the album is incomplete, and turn duplicates into 20 coins.
+- **Quests:** eleven one-time milestones and three repeating contracts. Claim all contracts to refresh the board. Match rewards, quests and level-ups earn coins, XP and packs; every 300 XP grants a pack.
 - **My club:** unlock five kit colors with earned coins, view trophies and records, and export/import your save.
 
 Players now have varied hair styles/colors, faces, ears, collars, cuffs, crests, detailed boots, keeper gloves and named/numbered shirts. Geometry and most materials remain shared.
 
-Everything runs locally, including fixtures, card draws and rewards. No purchases, accounts, server, calendar timers or network checks. Your browser stores progress in `localStorage`. **Export a backup before clearing browser data or moving to another device/address.** Import replaces the current club; malformed saves are rejected. If browser storage fails, the hub says progress is session-only and still allows export. Unreadable existing saves are preserved for recovery rather than overwritten.
+Everything runs locally, including fixtures, card draws and rewards. No real-money purchases, accounts, server, calendar timers or network checks. Your browser stores progress in `localStorage`. **Export a backup before clearing browser data or moving to another device/address.** Import replaces the current club; malformed saves are rejected. If browser storage fails, the hub says progress is session-only and still allows export. Unreadable existing saves are preserved for recovery rather than overwritten.
 
 Leaving a match or reloading keeps the pending fixture. Resume restarts it from kickoff; abandon earns nothing. Results and quest rewards are applied only once. This is a compact club career, without transfers, player aging, individual player careers or a full management simulation. Quick Match still provides custom settings and local two-player play.
 
 Tune the catalog, rewards, challenges and fixtures in `js/progression.js`; `js/club.js` contains the hub. Card attribute multipliers are in `js/player.js`. The save schema is versioned; changing it requires a migration or a new save key.
+
+## Coin pack shop
+
+Open **Pack Shop** in the club tabs. Buying immediately opens three cards and saves the coin deduction, cards and duplicate refunds together. All prices use earned in-game coins; there are no payments or online services.
+
+| Pack | Coins | Club | Rare | Elite | Legend | Heroes | Icon | Glory |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| Club | 150 | 65% | 25% | 8% | 2% | 0% | 0% | 0% |
+| Elite | 450 | 0% | 25% | 35% | 25% | 12% | 2.5% | 0.5% |
+| Heroes | 1,000 | 0% | 0% | 15% | 25% | 45% | 12% | 3% |
+| Glory | 2,400 | 0% | 0% | 0% | 15% | 25% | 35% | 25% |
+
+These are independent **per-card** rarity probabilities, not the chance of getting at least one in a pack. Players within a rarity are equally likely. Shop packs have no unowned-card guarantee; each duplicate refunds 20 coins. Earned packs retain their existing one-new-card guarantee and now draw from all 52 cards, so special cards are also obtainable without buying packs.
+
+The original 24 Club–Legend cards are joined by the supplied 10 Heroes (84–89), 10 Icons (90–97) and 8 Glory players (94–99), with their exact names, positions and overall ratings. Special tiers have distinct card designs. Existing saves, squads, coin balances, earned packs and claimed 24-card milestones are preserved; collecting all 52 unlocks a new milestone.
+
+Desktop and mobile-emulated Chromium checks verified shop prices/buttons, three-card reveals, the 52-card collection, persisted balances and purchases after an offline reload, with no console errors or missing assets.
+
+Tune `PACKS` in `js/progression.js` to change prices and odds. Run `node tests/shop.mjs` to check every probability interval, purchase deductions/refunds, rejected purchases, card counts, save compatibility and special-card squad selection.
 
 ## Controls
 

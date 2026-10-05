@@ -117,7 +117,7 @@ while (p.data.owned.length < CARDS.length) {
     p.complete(m.id, { gf: 3, ga: 0, passes: 0, shots: 3 });
   } else p.openPack();
 }
-assert.equal(p.data.owned.length, 24);
+assert.equal(p.data.owned.length, CARDS.length);
 validateSave(p.data);
 console.log(
   "PASS: fixtures, season/promotion, cup, challenges, quests, packs, squad, kits, persistence, backup validation, duplicate rewards and storage failures.",

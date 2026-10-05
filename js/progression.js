@@ -1,4 +1,4 @@
-// Offline-only metagame. No clock-based rewards, purchases, requests or accounts.
+// Offline-only metagame. No clock-based rewards, real-money purchases, requests or accounts.
 export const SAVE_KEY = "penalty.club.v1";
 export const POSITIONS = ["GK", "DEF", "MID", "MID", "FWD"];
 const names = [
@@ -42,6 +42,113 @@ export const CARDS = names.map((name, i) => {
     appearance: i,
   };
 });
+// Stable IDs preserve existing collections and backups when the catalog expands.
+export const RARITIES = [
+  "Club",
+  "Rare",
+  "Elite",
+  "Legend",
+  "Heroes",
+  "Icon",
+  "Glory",
+];
+const specialRosters = {
+  Heroes: [
+    ["Tomas Vreld", "FWD", 89],
+    ["Kaito Marenz", "MID", 88],
+    ["Luca Brandt", "DEF", 88],
+    ["Dario Quellan", "MID", 87],
+    ["Emeka Torvald", "MID", 87],
+    ["Ivo Strand", "GK", 86],
+    ["Nico Valdeur", "DEF", 85],
+    ["Soren Aldric", "MID", 85],
+    ["Marek Ostrava", "FWD", 84],
+    ["Yusuf Karimov", "DEF", 84],
+  ],
+  Icon: [
+    ["Rafael Montclair", "MID", 97],
+    ["Anselmo Draven", "FWD", 96],
+    ["Viktor Halloran", "DEF", 95],
+    ["Enzo Barosso", "MID", 94],
+    ["Mateus Corbell", "FWD", 94],
+    ["Henrik Valstrom", "GK", 93],
+    ["Dmitri Kessler", "FWD", 92],
+    ["Leandro Ferraz", "DEF", 91],
+    ["Oskar Lindqvist", "MID", 91],
+    ["Tariq Benali", "MID", 90],
+  ],
+  Glory: [
+    ["Aurelio Zenith", "MID", 99],
+    ["Kaspar Nightingale", "FWD", 98],
+    ["Valen Ashgrove", "MID", 97],
+    ["Ibrahim Solari", "DEF", 96],
+    ["Matteo Crestfall", "MID", 96],
+    ["Lothar Emberg", "GK", 95],
+    ["Jericho Vale", "DEF", 95],
+    ["Santiago Dawnbridge", "FWD", 94],
+  ],
+};
+for (const [rarity, roster] of Object.entries(specialRosters)) {
+  roster.forEach(([name, position, rating], index) => {
+    const appearance = CARDS.length;
+    CARDS.push({
+      id: `${rarity.toLowerCase()}${index + 1}`,
+      name,
+      position,
+      rating,
+      rarity,
+      pace: Math.min(99, rating + (index % 3) - 1),
+      shoot: Math.min(99, rating + (index % 4) - 1),
+      pass: Math.min(99, rating + 1 - (index % 3)),
+      appearance,
+    });
+  });
+}
+// Each shop slot independently rolls a rarity, then a uniform card in that rarity.
+// No hidden guarantees: the exact per-slot percentages are displayed in the shop.
+export const PACKS = [
+  {
+    id: "club",
+    name: "Club Pack",
+    cost: 150,
+    odds: [65, 25, 8, 2, 0, 0, 0],
+    description: "Build your foundations. Club through Legend.",
+  },
+  {
+    id: "elite",
+    name: "Elite Pack",
+    cost: 450,
+    odds: [0, 25, 35, 25, 12, 2.5, 0.5],
+    description: "Rare or better, with a chance at the special tiers.",
+  },
+  {
+    id: "heroes",
+    name: "Heroes Pack",
+    cost: 1000,
+    odds: [0, 0, 15, 25, 45, 12, 3],
+    description: "Elite or better. The best chance to recruit a Hero.",
+  },
+  {
+    id: "glory",
+    name: "Glory Pack",
+    cost: 2400,
+    odds: [0, 0, 0, 15, 25, 35, 25],
+    description: "Legend or better. Chase Icons and Glory players.",
+  },
+];
+export function drawShopCard(pack, random) {
+  let roll = random() * 100,
+    rarity = RARITIES.at(-1);
+  for (let i = 0; i < pack.odds.length; i++) {
+    roll -= pack.odds[i];
+    if (roll < 0) {
+      rarity = RARITIES[i];
+      break;
+    }
+  }
+  const pool = CARDS.filter((c) => c.rarity === rarity);
+  return pool[Math.floor(random() * pool.length)];
+}
 export const CLUBS = [
   { id: 0, name: "YOUR CLUB", color: "#edf1f5" },
   { id: 1, name: "RIVERSIDE", color: "#cf3046" },
@@ -166,7 +273,7 @@ export const QUESTS = [
   },
   {
     id: "album",
-    title: "Complete the album",
+    title: "Collect 24 players",
     stat: "collection",
     target: 24,
     coins: 500,
@@ -174,6 +281,15 @@ export const QUESTS = [
     packs: 2,
   },
 ];
+QUESTS.push({
+  id: "fullalbum",
+  title: "The complete collection",
+  stat: "collection",
+  target: CARDS.length,
+  coins: 1500,
+  xp: 500,
+  packs: 3,
+});
 export const CONTRACTS = [
   {
     id: "play",
@@ -310,7 +426,7 @@ export function validateSave(source) {
   );
   need(
     Array.isArray(d.owned) &&
-      d.owned.length <= 24 &&
+      d.owned.length <= CARDS.length &&
       d.owned.every(isCard) &&
       unique(d.owned),
     "Invalid collection.",
@@ -583,6 +699,27 @@ export class Progression {
         result.push({ ...card, duplicate });
       }
       return result;
+    });
+  }
+  // Deduction, draws and duplicate refunds commit in one saved transaction.
+  buyPack(id) {
+    const pack = PACKS.find((p) => p.id === id);
+    need(pack, "Unknown pack.");
+    return this.change((d) => {
+      need(d.coins >= pack.cost, "Not enough coins for this pack.");
+      d.coins -= pack.cost;
+      d.stats.packs++;
+      const random = () => {
+        d.rng = (Math.imul(d.rng, 1664525) + 1013904223) >>> 0;
+        return d.rng / 4294967296;
+      };
+      return Array.from({ length: 3 }, () => {
+        const card = drawShopCard(pack, random),
+          duplicate = d.owned.includes(card.id);
+        if (duplicate) d.coins += 20;
+        else d.owned.push(card.id);
+        return { ...card, duplicate };
+      });
     });
   }
   begin(kind, challenge) {
