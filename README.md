@@ -93,6 +93,14 @@ Earned reward packs remain three-card packs with one guaranteed unowned guide pl
 
 `tests/shop.mjs` checks every odds interval, guide prices/card counts, all six expected quick-sell returns, duplicate refunds, insufficient funds, selling restrictions, save compatibility and equipping special cards. Desktop/mobile-emulated browser checks cover reveals, offline purchases, persistence and quick-selling. Real-device checks remain outstanding.
 
+## Matching player appearances
+
+Each card and its in-game player share a deterministic appearance based on the stable player ID: buzz cut, textured crop, side part, quiff, curls, afro, locs, braids, bun or bald. Profiles also vary skin and hair colors, eye colors, face proportions, eyebrows, noses, mouths, beards, moustaches and goatees. Cards show the hairstyle name. Keepers wear the same gold kit in their home card portrait and on the pitch.
+
+`js/appearance.js` owns the shared profiles and hair shapes, plus the procedural SVG portraits. `js/player-head.js` builds low-poly 3D heads using shared geometries/materials. No image downloads or save migration are required. These are stylized matching features, not photorealistic portraits or a player appearance editor.
+
+Run `node tests/appearance.mjs` for identity stability, coverage of all ten hairstyles and shared card/model profiles. Headless Chromium also rendered all ten 3D heads beside their SVG portraits, checked equipped-player identities, started a match and reloaded offline without page errors.
+
 ## Controls
 
 | Action | Player 1 | Local player 2 | Gamepad |

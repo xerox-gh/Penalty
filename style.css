@@ -1350,3 +1350,4 @@ details {
 .packReveal .cardGrid {
   grid-template-columns: repeat(auto-fit, minmax(140px, 180px));
 }
+.playerCard .appearanceTag{display:block;font-size:9px;letter-spacing:.3px;opacity:.8}.playerCard svg{max-height:130px}

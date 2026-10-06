@@ -1,3 +1,5 @@
+import { appearanceFor } from "./appearance.js";
+import { buildHead, skins } from "./player-head.js";
 import * as T from "../libs/three.module.js";
 import { CFG, clamp } from "./config.js";
 // Shared low-poly body parts; limbs pivot at hips, knees, shoulders and elbows.
@@ -16,14 +18,7 @@ const geometry = {
   sleeve: new T.CylinderGeometry(0.105, 0.08, 0.2, 6),
   number: new T.PlaneGeometry(0.25, 0.28),
 };
-const skinMaterials = [0xdab08c, 0x8e6045, 0xe6bb97, 0x624333, 0xb77e58].map(
-  (color) => new T.MeshStandardMaterial({ color, roughness: 1 }),
-);
 const shortsMat = new T.MeshStandardMaterial({ color: 0x192c49, roughness: 1 });
-const hairMats = [0x211c19, 0x66432b, 0xc7a367, 0x392923].map(
-  (color) => new T.MeshStandardMaterial({ color, roughness: 1 }),
-);
-const eyeMat = new T.MeshStandardMaterial({ color: 0x17202a });
 const goldMat = new T.MeshStandardMaterial({ color: 0xe8c565, roughness: 0.6 });
 const sockMat = new T.MeshStandardMaterial({ color: 0xf0eee5, roughness: 1 });
 const bootMats = [0xeee8da, 0x10151c, 0xee9345, 0xaadaf0].map(
@@ -69,7 +64,8 @@ export class Player {
       color: this.keeper ? (team === 0 ? 0xe9bf43 : 0x64b29b) : color,
       roughness: 0.85,
     });
-    const skin = skinMaterials[appearance % 5];
+    this.appearance = appearanceFor(card || { name: this.name });
+    const skin = skins[this.appearance.skin];
     const add = (parent, geo, mat, x, y, z) => {
       const m = new T.Mesh(geo, mat);
       m.position.set(x, y, z);
@@ -80,65 +76,14 @@ export class Player {
     add(this.root, geometry.torso, this.kit, 0, 1.22, 0);
     add(this.root, geometry.shorts, shortsMat, 0, 0.88, 0);
     add(this.root, geometry.neck, skin, 0, 1.51, 0);
-    const head = new T.Group();
+    const head = buildHead(this.appearance);
     head.position.set(0, 1.67, 0.01);
     this.root.add(head);
-    const face = add(head, geometry.head, skin, 0, 0, 0);
-    face.scale.set(0.94, 1.12, 0.93);
-    const hair = add(
-      head,
-      geometry.hair,
-      hairMats[appearance % 4],
-      0,
-      0.025,
-      -0.006,
-    );
-    hair.scale.set(
-      1,
-      appearance % 3 === 0 ? 1.45 : appearance % 3 === 1 ? 0.6 : 1,
-      1,
-    );
     const detail = (parent, mat, x, y, z, sx, sy, sz) => {
       const m = add(parent, geometry.detail, mat, x, y, z);
       m.scale.set(sx, sy, sz);
       return m;
     };
-    for (const side of [-1, 1]) {
-      detail(head, skin, side * 0.163, -0.012, 0, 0.038, 0.066, 0.045);
-      detail(head, eyeMat, side * 0.065, 0.008, 0.157, 0.031, 0.018, 0.012);
-      detail(
-        head,
-        hairMats[appearance % 4],
-        side * 0.065,
-        0.038,
-        0.154,
-        0.052,
-        0.014,
-        0.013,
-      );
-    }
-    detail(head, skin, 0, -0.025, 0.169, 0.036, 0.062, 0.046);
-    detail(
-      head,
-      hairMats[appearance % 4],
-      0,
-      -0.098,
-      0.139,
-      0.066,
-      0.012,
-      0.012,
-    );
-    if (appearance % 4 === 1)
-      detail(
-        head,
-        hairMats[appearance % 4],
-        0,
-        -0.137,
-        0.103,
-        0.12,
-        0.055,
-        0.045,
-      );
     detail(this.root, goldMat, -0.105, 1.31, 0.219, 0.063, 0.079, 0.015);
     detail(this.root, sockMat, 0.11, 1.32, 0.216, 0.065, 0.012, 0.015);
     detail(this.root, sockMat, 0, 1.13, 0.243, 0.24, 0.021, 0.012);
