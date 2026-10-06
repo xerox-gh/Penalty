@@ -95,7 +95,7 @@ Earned reward packs remain three-card packs with one guaranteed unowned guide pl
 
 ## Matching player appearances
 
-Each card and its in-game player share a deterministic appearance based on the stable player ID: buzz cut, textured crop, side part, quiff, curls, afro, locs, braids, bun or bald. Profiles also vary skin and hair colors, eye colors, face proportions, eyebrows, noses, mouths, beards, moustaches and goatees. Cards show the hairstyle name. Keepers wear the same gold kit in their home card portrait and on the pitch.
+Each card and its in-game player share a deterministic appearance based on the stable player ID: buzz cut, textured crop, side part, quiff, curls, afro, locs, braids, bun or bald. Profiles also vary skin and hair colors, eye colors, face proportions, eyebrows, noses, mouths, beards, moustaches and goatees. Card tooltips show the hairstyle name. Keepers wear the same gold kit in their home card portrait and on the pitch.
 
 `js/appearance.js` owns the shared profiles and hair shapes, plus the procedural SVG portraits. `js/player-head.js` builds low-poly 3D heads using shared geometries/materials. No image downloads or save migration are required. These are stylized matching features, not photorealistic portraits or a player appearance editor.
 
@@ -110,6 +110,12 @@ Purchases and earned-pack rewards are committed **before** the reveal appears. S
 All 112 guide players and retained legacy players have stable fictional nationalities, shown with procedural SVG flags and country names on cards. The active player's match tag also includes the country code. These are creative biographies, independent of appearance, ratings and pack odds. Edit the explicit special-player assignments or country catalog in `js/nationality.js`; no flag assets or network requests are needed.
 
 `js/pack-opening.js` owns presentation only; progression remains in `js/progression.js`. `node tests/nationality.mjs` checks complete coverage, stable identities and self-contained flags. Desktop and mobile-emulated Chromium checks passed for five-card sequential reveals, country flags, skip, Escape, duplicate-purchase blocking, no duplicate rewards, mid-opening reload persistence, offline purchases and reduced-motion behavior.
+
+## Collectible card presentation
+
+Cards use reference-inspired shield silhouettes, metallic bronze/silver/gold base finishes, and foil special-tier frames. Ratings and positions sit in the upper corner, the player portrait fills the center, and the lower panel holds the full name, the three existing PAC/SHO/PAS attributes, country flag/code and an original club crest. Icon portraits use a monochrome treatment. Every rarity has its own palette. Collection ownership and quick-sell controls sit below the shield.
+
+The same card renderer is used in the collection, individual pack reveals and pack summaries. Two-column mobile layouts keep names and flags legible. This is a CSS/SVG presentation change: card ratings, rewards, pack odds, identities and save data are unchanged.
 
 ## Controls
 

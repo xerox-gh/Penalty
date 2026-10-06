@@ -141,7 +141,16 @@ export class Club {
   card(c, owned = true, duplicate = false, actions = true) {
     owned = owned && this.save.data.owned.includes(c.id);
     const look = appearanceFor(c),nation=nationalityFor(c);
-    return `<article class="playerCard ${c.rarity.toLowerCase()} ${owned ? "" : "locked"}"><div class="cardTop"><b>${c.rating}</b><span>${c.position}<small>${c.rarity}</small></span></div>${portraitSVG(look, c.position === "GK" ? "#e9bf43" : KITS.find((k) => k.id === this.save.data.kit).color)}<h3>${c.name}</h3><div class="cardNation">${flagSVG(nation)}<span>${nation.name}</span></div><small class="appearanceTag">${HAIR_STYLES[look.style]}</small><div class="cardStats"><span>${c.pace} PAC</span><span>${c.shoot} SHO</span><span>${c.pass} PAS</span></div><small>${duplicate ? `DUPLICATE · +${QUICK_SELL[c.rarity]} COINS` : owned ? (c.legacy ? "LEGACY · IN YOUR CLUB" : "IN YOUR CLUB") : "NOT COLLECTED"}</small>${actions && owned && !duplicate && !this.save.data.squad.includes(c.id) ? button("sell:" + c.id, `QUICK SELL · ${QUICK_SELL[c.rarity]}`, !!this.save.data.pending) : ""}</article>`;
+    const special=RARITIES.indexOf(c.rarity)>=5;
+    const status=duplicate ? `DUPLICATE · +${QUICK_SELL[c.rarity]} COINS` : owned ? (c.legacy ? "LEGACY · IN YOUR CLUB" : "IN YOUR CLUB") : "NOT COLLECTED";
+    return `<article class="playerCard ${c.rarity.toLowerCase()} ${special ? 'specialCard' : 'baseCard'} ${owned ? '' : 'locked'}" aria-label="${c.name}, ${c.rating} ${c.position}, ${c.rarity}, ${nation.name}">
+      <div class="cardFace" title="${HAIR_STYLES[look.style]}"><div class="cardInner"><div class="cardFoil" aria-hidden="true"></div>
+      <div class="cardTop"><b>${c.rating}</b><span>${c.position}</span></div><div class="cardEdition">${c.rarity}</div>
+      <div class="cardPortrait">${portraitSVG(look,c.position==='GK'?'#e9bf43':KITS.find(k=>k.id===this.save.data.kit).color)}</div>
+      <span class="cardEmblem" aria-hidden="true">P</span><div class="cardData"><h3>${c.name}</h3>
+      <div class="cardStats"><span><small>PAC</small><b>${c.pace}</b></span><span><small>SHO</small><b>${c.shoot}</b></span><span><small>PAS</small><b>${c.pass}</b></span></div>
+      <div class="cardNation" title="${nation.name}">${flagSVG(nation)}<span>${nation.code}</span><span class="clubCrest" aria-hidden="true">P/</span></div></div></div></div>
+      <small class="cardStatus">${status}</small>${actions && owned && !duplicate && !this.save.data.squad.includes(c.id) ? button('sell:'+c.id,`QUICK SELL · ${QUICK_SELL[c.rarity]}`,!!this.save.data.pending):''}</article>`;
   }
   quest(q, contract = false) {
     const d = this.save.data,
