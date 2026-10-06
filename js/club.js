@@ -1,3 +1,5 @@
+import { PackOpening } from "./pack-opening.js";
+import {nationalityFor,flagSVG} from "./nationality.js";
 import { appearanceFor, portraitSVG, HAIR_STYLES } from "./appearance.js";
 import {
   Progression,
@@ -37,6 +39,7 @@ export class Club {
     this.tab = "play";
     this.message = "";
     this.reveal = [];
+    this.opening = new PackOpening(this);
     this.el = document.getElementById("clubHub");
     this.el.addEventListener("click", (e) => {
       const b = e.target.closest("[data-club]");
@@ -73,6 +76,7 @@ export class Club {
     this.render();
   }
   act(action) {
+    if(this.opening.dialog.open)return;
     try {
       this.game.audio.start();
       this.game.audio.play("ui");
@@ -128,18 +132,16 @@ export class Club {
       }
       this.render();
       if (verb === "buy" || verb === "pack")
-        this.el
-          .querySelector(".packReveal")
-          ?.scrollIntoView({ block: "start" });
+        this.opening.open(this.reveal,verb === "buy" ? PACKS.find(p=>p.id===id).name : "Reward Pack");
     } catch (e) {
       this.message = e.message;
       this.render();
     }
   }
-  card(c, owned = true, duplicate = false) {
+  card(c, owned = true, duplicate = false, actions = true) {
     owned = owned && this.save.data.owned.includes(c.id);
-    const look = appearanceFor(c);
-    return `<article class="playerCard ${c.rarity.toLowerCase()} ${owned ? "" : "locked"}"><div class="cardTop"><b>${c.rating}</b><span>${c.position}<small>${c.rarity}</small></span></div>${portraitSVG(look, c.position === "GK" ? "#e9bf43" : KITS.find((k) => k.id === this.save.data.kit).color)}<h3>${c.name}</h3><small class="appearanceTag">${HAIR_STYLES[look.style]}</small><div class="cardStats"><span>${c.pace} PAC</span><span>${c.shoot} SHO</span><span>${c.pass} PAS</span></div><small>${duplicate ? `DUPLICATE · +${QUICK_SELL[c.rarity]} COINS` : owned ? (c.legacy ? "LEGACY · IN YOUR CLUB" : "IN YOUR CLUB") : "NOT COLLECTED"}</small>${owned && !duplicate && !this.save.data.squad.includes(c.id) ? button("sell:" + c.id, `QUICK SELL · ${QUICK_SELL[c.rarity]}`, !!this.save.data.pending) : ""}</article>`;
+    const look = appearanceFor(c),nation=nationalityFor(c);
+    return `<article class="playerCard ${c.rarity.toLowerCase()} ${owned ? "" : "locked"}"><div class="cardTop"><b>${c.rating}</b><span>${c.position}<small>${c.rarity}</small></span></div>${portraitSVG(look, c.position === "GK" ? "#e9bf43" : KITS.find((k) => k.id === this.save.data.kit).color)}<h3>${c.name}</h3><div class="cardNation">${flagSVG(nation)}<span>${nation.name}</span></div><small class="appearanceTag">${HAIR_STYLES[look.style]}</small><div class="cardStats"><span>${c.pace} PAC</span><span>${c.shoot} SHO</span><span>${c.pass} PAS</span></div><small>${duplicate ? `DUPLICATE · +${QUICK_SELL[c.rarity]} COINS` : owned ? (c.legacy ? "LEGACY · IN YOUR CLUB" : "IN YOUR CLUB") : "NOT COLLECTED"}</small>${actions && owned && !duplicate && !this.save.data.squad.includes(c.id) ? button("sell:" + c.id, `QUICK SELL · ${QUICK_SELL[c.rarity]}`, !!this.save.data.pending) : ""}</article>`;
   }
   quest(q, contract = false) {
     const d = this.save.data,

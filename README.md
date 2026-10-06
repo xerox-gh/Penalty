@@ -101,6 +101,16 @@ Each card and its in-game player share a deterministic appearance based on the s
 
 Run `node tests/appearance.mjs` for identity stability, coverage of all ten hairstyles and shared card/model profiles. Headless Chromium also rendered all ten 3D heads beside their SVG portraits, checked equipped-player identities, started a match and reloaded offline without page errors.
 
+## Pack openings and nationalities
+
+Shop and earned packs now open in a full-screen reveal: open the sealed pack, see each player's country and position, then reveal the card with its rarity color and procedural sound. Heroes and higher add confetti. Next Player advances one card at a time, View All shows the full pack, and Skip to Results bypasses the sequence. Escape closes the reveal. Reduced-motion preferences disable animations and suspense delays.
+
+Purchases and earned-pack rewards are committed **before** the reveal appears. Skipping, closing, hiding the tab or reloading cannot re-roll or grant the pack again. If browser storage is unavailable, the existing session-only warning remains visible. Background shop actions are blocked while the dialog is open. The ending summary returns to the club without changing the saved rewards.
+
+All 112 guide players and retained legacy players have stable fictional nationalities, shown with procedural SVG flags and country names on cards. The active player's match tag also includes the country code. These are creative biographies, independent of appearance, ratings and pack odds. Edit the explicit special-player assignments or country catalog in `js/nationality.js`; no flag assets or network requests are needed.
+
+`js/pack-opening.js` owns presentation only; progression remains in `js/progression.js`. `node tests/nationality.mjs` checks complete coverage, stable identities and self-contained flags. Desktop and mobile-emulated Chromium checks passed for five-card sequential reveals, country flags, skip, Escape, duplicate-purchase blocking, no duplicate rewards, mid-opening reload persistence, offline purchases and reduced-motion behavior.
+
 ## Controls
 
 | Action | Player 1 | Local player 2 | Gamepad |

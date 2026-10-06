@@ -45,6 +45,9 @@ export class Audio {
       o = this.ctx.createOscillator(),
       g = this.ctx.createGain();
     const tones = {
+      pack: [100, 700, 0.7],
+      reveal: [440, 880, 0.3],
+      rare: [330, 1320, 0.6],
       kick: [140, 40, 0.12],
       post: [1100, 550, 0.3],
       net: [400, 80, 0.2],

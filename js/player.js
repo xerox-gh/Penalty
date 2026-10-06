@@ -1,3 +1,4 @@
+import {nationalityFor} from "./nationality.js";
 import { appearanceFor } from "./appearance.js";
 import { buildHead, skins } from "./player-head.js";
 import * as T from "../libs/three.module.js";
@@ -31,6 +32,7 @@ const names = [
 export class Player {
   constructor(scene, team, index, color, card = null) {
     const appearance = card?.appearance ?? index + team * 7;
+    this.nationality = nationalityFor(card || {id:names[team][index]});
     this.paceBoost = 1 + ((card?.pace ?? 65) - 65) * 0.0015;
     this.shotBoost = 1 + ((card?.shoot ?? 65) - 65) * 0.002;
     this.passBoost = 1 + ((card?.pass ?? 65) - 65) * 0.001;

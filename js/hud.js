@@ -45,7 +45,7 @@ export class HUD {
     document.getElementById("stamina").value = p.stamina;
     document.getElementById("power").value = p.charge;
     document.getElementById("playerTag").textContent =
-      `${p.index + 1}  ${p.name}`;
+      `${p.index + 1}  ${p.name} · ${p.nationality.code}`;
     document.getElementById("notice").textContent =
       s === "countdown"
         ? Math.ceil(g.state.timer)

@@ -1,3 +1,4 @@
+import {nationalityFor} from "./nationality.js";
 import { GUIDE } from "./shop-guide.js";
 // Offline-only metagame. No clock-based rewards, real-money purchases, requests or accounts.
 export const SAVE_KEY = "penalty.club.v1";
@@ -116,6 +117,7 @@ const legacy = previousCards
   .filter((c) => !SHOP_CARDS.some((p) => p.id === c.id))
   .map((c) => ({ ...c, legacy: true }));
 CARDS.splice(0, CARDS.length, ...SHOP_CARDS, ...legacy);
+for(const card of CARDS) card.nationality=nationalityFor(card).code;
 export const PACKS = GUIDE.packs;
 export function drawShopCard(pack, random) {
   let roll = random() * 100,
