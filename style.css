@@ -1375,3 +1375,15 @@ details {
 @media(max-width:800px){.cardGrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 12px}.playerCard .cardTop b{font-size:32px}.playerCard h3{font-size:14px}.cardStats b{font-size:20px}.packReveal .cardGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.openingCard{width:240px}.openingSummary .playerCard h3{font-size:13px}}
 /* Leave room above the shield tip for flags, including narrow mobile cards. */
 .cardData{top:62%;padding-bottom:0}.playerCard h3,.openingCard .playerCard h3{height:25%;margin-bottom:0}.playerCard .cardStats{padding:3% 0 2%}.playerCard .cardNation{margin-top:3%}.cardPortrait{bottom:33%}@media(max-width:800px){.cardStats b{font-size:19px}.cardStats small{font-size:8px}.playerCard .cardNation{gap:4px}}
+
+/* Player career creation studio and season dashboard. */
+.proStudio{display:grid;grid-template-columns:minmax(220px,300px) 1fr;gap:32px;align-items:start;margin:28px 0}
+.proPreview{padding:22px;background:linear-gradient(145deg,#263947,#101b28);border:1px solid #49606b;border-radius:20px;text-align:center}
+.proPreview .playerCard{max-width:250px;margin:20px auto 0}.proPreview p{font-size:13px;color:#b8cbd2}
+.proFields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.proFields label{display:flex;flex-direction:column;gap:8px;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:#c4d1d8}
+.proFields input,.proFields select{width:100%;min-width:0;min-height:44px;padding:10px;border:1px solid #4c626d;border-radius:8px;background:#13232e;color:#fff;font:inherit}
+#proForm fieldset{margin:0;border:1px solid #3c5360;border-radius:16px;padding:24px}#proForm legend{font-weight:800;padding:0 10px}#proForm p{color:#aebfca;line-height:1.6}
+.proSummary{display:grid;grid-template-columns:1fr 1fr;gap:24px;padding:24px;border-radius:16px;background:#1a2d39;border:1px solid #47616c}.proSummary button{margin:6px 8px 6px 0}.proSummary progress{width:100%;accent-color:#b7f073}.proSummary h3{margin-top:10px}
+@media(max-width:760px){.proStudio,.proSummary{grid-template-columns:1fr}.proPreview{max-width:360px;width:100%;margin:auto}.proFields{grid-template-columns:repeat(2,minmax(0,1fr))}#proForm fieldset{padding:16px}}
+@media(max-width:390px){.proFields{grid-template-columns:1fr}}

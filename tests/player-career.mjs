@@ -1,0 +1,38 @@
+import assert from 'node:assert/strict';
+import { Progression, freshSave, validateSave } from '../js/progression.js';
+import { defaultPro, proCard, proSlot } from '../js/player-career.js';
+import { appearanceFor } from '../js/appearance.js';
+import { nationalityFor } from '../js/nationality.js';
+const memory=new Map(), storage={getItem:k=>memory.get(k),setItem:(k,v)=>memory.set(k,v)};
+const save=new Progression(storage), old=freshSave();delete old.playerCareer;
+assert.equal(validateSave(old).playerCareer,null);
+const profile={...defaultPro(),name:'Test <Pro>',position:'DEF',rarity:'Eternal',pace:87,shoot:91,pass:98};
+save.savePro(profile);
+assert.equal(proCard(profile).rating,92);
+assert.equal(proSlot(profile),1);
+assert.equal(appearanceFor(proCard(profile)),profile.look);
+assert.equal(nationalityFor(proCard(profile)).code,profile.nationality);
+assert.throws(()=>save.savePro({...profile,pace:101}));
+assert.throws(()=>save.savePro({...profile,rarity:'fake'}));
+const squad=[...save.data.squad],clubCareer=JSON.stringify(save.data.career);
+for(let i=0;i<10;i++){
+ const p=save.begin('player');
+ assert.throws(()=>save.savePro(profile));
+ assert.throws(()=>save.trainPro('pace'));
+ const restored=new Progression(storage);assert.equal(restored.data.pending.id,p.id);
+ const r=save.complete(p.id,{gf:2,ga:0,passes:4,shots:5});assert.ok(r);
+ assert.equal(save.complete(p.id,{gf:2,ga:0,passes:4,shots:5}),null);
+}
+assert.equal(save.data.playerCareer.titles,1);
+assert.equal(save.data.playerCareer.points,30);
+assert.equal(save.data.playerCareer.training,30);
+save.trainPro('pace');assert.equal(save.data.playerCareer.profile.pace,88);
+assert.equal(save.data.playerCareer.training,29);
+assert.deepEqual(save.data.squad,squad);assert.equal(JSON.stringify(save.data.career),clubCareer);
+assert.throws(()=>save.begin('player'));
+save.nextPlayerSeason();assert.equal(save.data.playerCareer.season,2);
+assert.equal(save.data.playerCareer.round,0);assert.equal(save.data.playerCareer.matches,10);
+save.import(save.export());assert.equal(save.data.playerCareer.profile.name,profile.name);
+const bad=JSON.parse(save.export());bad.playerCareer.profile.look.style=99;assert.throws(()=>save.import(JSON.stringify(bad)));
+const p=save.begin('player');save.abandon();assert.equal(save.data.playerCareer.matches,10);
+console.log('PASS: custom player creation, card/appearance, legacy migration, resume, validation, training, season rewards, duplicate settlement, backup and club isolation.');

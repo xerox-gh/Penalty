@@ -14,7 +14,7 @@ const rows=[
 export const NATIONS=rows.map(([code,name,pattern,...colors])=>({code,name,pattern,colors}));
 // Explicit creative assignments for the special players already supplied by the user.
 const specials={heroes1:'DE',heroes2:'JP',heroes3:'DE',heroes4:'IT',heroes5:'NG',heroes6:'DK',heroes7:'FR',heroes8:'SE',heroes9:'PL',heroes10:'UA',icon1:'FR',icon2:'IT',icon3:'NO',icon4:'AR',icon5:'AR',icon6:'SE',icon7:'DE',icon8:'AR',icon9:'SE',icon10:'FR',glory1:'IT',glory2:'DK',glory3:'NL',glory4:'NG',glory5:'IT',glory6:'DE',glory7:'IE',glory8:'AR'};
-export function nationalityFor(card){let hash=0;for(const c of card.id)hash=(Math.imul(hash,31)+c.charCodeAt(0))>>>0;return NATIONS.find(n=>n.code===specials[card.id])||NATIONS[hash%NATIONS.length];}
+export function nationalityFor(card){if(card.custom){const nation=NATIONS.find(n=>n.code===card.nationality);if(nation)return nation;}let hash=0;for(const c of card.id)hash=(Math.imul(hash,31)+c.charCodeAt(0))>>>0;return NATIONS.find(n=>n.code===specials[card.id])||NATIONS[hash%NATIONS.length];}
 export function flagSVG(n){const c=n.colors;let shapes=`<rect width="30" height="20" fill="${c[0]}"/>`;
  if(n.pattern==='v')shapes+=`<path d="M10 0h10v20H10Z" fill="${c[1]}"/><path d="M20 0h10v20H20Z" fill="${c[2]}"/>`;
  if(n.pattern==='h')shapes+=`<path d="M0 6.666h30v6.668H0Z" fill="${c[1]}"/><path d="M0 13.333h30V20H0Z" fill="${c[2]}"/>`;

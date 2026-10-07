@@ -179,3 +179,13 @@ Run `node tests/progression.mjs` with a current Node.js version. Tests cover all
 - [ ] Reload and verify coins, squad and league progress persist.
 - [ ] Export/import a backup; malformed imports must preserve the existing club.
 - [ ] Resume an unfinished fixture offline and verify it starts at kickoff.
+
+### Player Career
+
+Open **Player Career** in the club hub (separate from Club Career). Create an outfield player with a name, DEF/MID/FWD position, nationality, hair/face choices, pace, shooting and passing from 1–100, and any card rarity from Rookie to Eternal. The card preview updates as you edit. Overall is the rounded average of the three stats; rarity controls the card artwork independently. Save the player before starting a fixture. Existing collectible players, squad and club-career standings are unaffected.
+
+Player-career fixtures last two minutes and lock control to your player, including after passes, goals and restarts. Tab/manual switching and automatic switching are disabled in this mode; teammates and the goalkeeper use AI. The custom player's three attributes use the existing collectible-card gameplay boosts. Goalkeeper careers, transfers and individual goal/assist attribution are not included; the dashboard labels wins and fixture scores as team results.
+
+Each season has ten fixtures. Earn three points for a win and one for a draw; reaching 18 points earns a title, 400 bonus coins and two packs. Wins award three training points, draws/losses one. Spend a training point for +1 to a chosen stat (maximum 100). You can also edit your creation between matches without resetting career progress. Start the next season after all ten fixtures; appearances, wins, XP, titles and unspent training points carry over. Career progress and the custom player are included in the normal offline save and backup export/import. Older saves migrate with no player career until one is created.
+
+`node tests/player-career.mjs` covers creation, appearance, validation, old-save migration, pending-match recovery, training, ten-fixture season rewards, duplicate settlement, backups and isolation from club career. Browser checks cover live preview, a playable custom midfielder with locked controls, match rewards/training, a 390px mobile layout and offline reload without console errors.

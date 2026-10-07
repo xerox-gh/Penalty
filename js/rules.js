@@ -14,7 +14,7 @@ export class Rules {
     const p = g.teams[team].players[4];
     p.x = -g.teams[team].dir * 1.2;
     p.z = 0;
-    g.teams[team].active = 4;
+    g.teams[team].active = g.teams[team].lockedPlayer ?? 4;
     g.ball.lastTeam = team;
     g.state.set("countdown", CFG.match.countdown);
     g.audio.play("whistle");
@@ -88,7 +88,7 @@ export class Rules {
     p.x = r.x - g.teams[r.team].dir;
     p.z = r.z * 0.97;
     p.cooldown = 0;
-    g.teams[r.team].active = p.index;
+    g.teams[r.team].active = g.teams[r.team].lockedPlayer ?? p.index;
     g.ball.lastTeam = r.team;
     for (const q of g.players)
       if (q.team !== r.team && Math.hypot(q.x - r.x, q.z - r.z) < 4) {

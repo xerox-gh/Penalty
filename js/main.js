@@ -1,3 +1,4 @@
+import { proCard, proSlot } from "./player-career.js";
 import * as T from "../libs/three.module.js";
 import { CFG, distance, clamp } from "./config.js";
 import { buildPitch, Particles } from "./pitch.js";
@@ -152,16 +153,21 @@ class Game {
           });
           p.kit.dispose();
         }
+    const roster = this.club.save.data.squad.map(id => CARDS.find(c => c.id === id));
+    const pro = this.match?.kind === "player" ? this.club.save.data.playerCareer?.profile : null;
+    if (pro) roster[proSlot(pro)] = proCard(pro);
     this.teams = [
       new Team(
         this.scene,
         0,
         this.options.homeColor,
         this.options.formation,
-        this.club.save.data.squad.map((id) => CARDS.find((c) => c.id === id)),
+        roster,
       ),
       new Team(this.scene, 1, this.options.awayColor, this.options.formation),
     ];
+    this.teams[0].lockedPlayer = pro ? proSlot(pro) : null;
+    if (pro) this.teams[0].active = proSlot(pro);
     this.players = this.teams.flatMap((t) => t.players);
     for (const p of this.players)
       p.openPitch = this.options.fieldMode === "Stadium";
@@ -288,7 +294,7 @@ class Game {
     const p = team.players[team.active],
       c = this.input.controls(second, this.options.local);
     team.passLock = Math.max(0, (team.passLock || 0) - dt);
-    if (c.switchEdge) {
+    if (c.switchEdge && team.lockedPlayer == null) {
       p.charge = 0;
       team.switch(this.ball, { x: c.x, z: c.z });
       return;
@@ -346,7 +352,7 @@ class Game {
         )
       ) {
         if (team.id === 0) this.passIntent = { from: p.index, ttl: 4 };
-        team.active = target.player.index;
+        if (team.lockedPlayer == null) team.active = target.player.index;
         team.passLock = 1.5;
         if (c.sprint) {
           p.runTimer = CFG.control.runDuration;
@@ -364,6 +370,7 @@ class Game {
       this.particles.burst(p.x, p.z, 10);
     }
     if (
+      team.lockedPlayer == null &&
       this.options.auto &&
       team.passLock === 0 &&
       !c.shoot &&

@@ -30,6 +30,7 @@ export const HAIR_COLORS = [
 export const EYE_COLORS = ["#493223", "#53778a", "#657444", "#292d35"];
 const cache = new Map();
 export function appearanceFor(identity) {
+  if (identity?.custom && identity.look) return identity.look;
   const key = String(identity?.id ?? identity?.name ?? identity);
   if (cache.has(key)) return cache.get(key);
   let hash = 2166136261;

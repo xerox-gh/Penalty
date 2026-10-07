@@ -1,3 +1,4 @@
+import { validatePro, newPlayerCareer, validatePlayerCareer, CAREER_STATS } from "./player-career.js";
 import {nationalityFor} from "./nationality.js";
 import { GUIDE } from "./shop-guide.js";
 // Offline-only metagame. No clock-based rewards, real-money purchases, requests or accounts.
@@ -386,6 +387,7 @@ export function freshSave() {
       claimed: [],
     },
     career: newCareer(),
+    playerCareer: null,
     cup: { round: 0, attempt: 1, status: "ready" },
     challenges: [],
     trophies: [],
@@ -524,15 +526,17 @@ export function validateSave(source) {
       d.trophies.every((t) => typeof t === "string" && t.length <= 80),
     "Invalid trophies.",
   );
+  d.playerCareer = validatePlayerCareer(d.playerCareer);
   if (d.pending) {
     const p = d.pending;
     need(
       validInt(p.id) &&
         p.id <= d.serial &&
-        ["quick", "career", "cup", "challenge"].includes(p.kind) &&
+        ["quick", "career", "cup", "challenge", "player"].includes(p.kind) &&
         validInt(p.opponent, 7),
       "Invalid pending match.",
     );
+    need(p.kind !== "player" || (d.playerCareer && p.round === d.playerCareer.round && p.season === d.playerCareer.season && p.round < 10), "Invalid pending player fixture.");
     need(
       p.kind !== "challenge" || CHALLENGES.some((c) => c.id === p.challenge),
       "Invalid pending challenge.",
@@ -731,15 +735,42 @@ export class Progression {
       return coins;
     });
   }
+  savePro(profile) {
+    return this.change(d => {
+      need(!d.pending, "Finish or abandon the pending match before editing your player.");
+      const clean = validatePro(profile);
+      if (d.playerCareer) d.playerCareer.profile = clean;
+      else d.playerCareer = newPlayerCareer(clean);
+    });
+  }
+  trainPro(stat) {
+    return this.change(d => {
+      const c = d.playerCareer;
+      need(!d.pending && c && CAREER_STATS.includes(stat), "Training is available between player-career matches.");
+      need(c.training > 0 && c.profile[stat] < 100, "Earn training points or choose a stat below 100.");
+      c.training--; c.profile[stat]++;
+    });
+  }
+  nextPlayerSeason() {
+    this.change(d => {
+      need(!d.pending && d.playerCareer?.round === 10, "Finish all ten fixtures first.");
+      Object.assign(d.playerCareer, {season:d.playerCareer.season+1,round:0,points:0,history:[]});
+    });
+  }
   begin(kind, challenge) {
     return this.change((d) => {
       need(!d.pending, "Resume or abandon your pending match first.");
       need(
-        ["quick", "career", "cup", "challenge"].includes(kind),
+        ["quick", "career", "cup", "challenge", "player"].includes(kind),
         "Unknown mode.",
       );
       let opponent = 1;
       const p = { id: ++d.serial, kind, opponent };
+      if (kind === "player") {
+        const c = d.playerCareer;
+        need(c && c.round < 10, "Create your player or start the next season first.");
+        Object.assign(p,{opponent:1+c.round%7,round:c.round,season:c.season});
+      }
       if (kind === "career") {
         need(d.career.round < 10, "Start the next season first.");
         const fixture = SCHEDULE[d.career.round].find((f) => f.includes(0));
@@ -806,6 +837,20 @@ export class Progression {
       const trophy = (t) => {
         if (d.trophies.length < 100) d.trophies.push(t);
       };
+      if (p.kind === "player") {
+        const c = d.playerCareer;
+        need(c && c.round === p.round && c.season === p.season, "This player fixture was already processed.");
+        c.round++; c.matches++; c.wins += +win; c.points += win ? 3 : draw ? 1 : 0;
+        const training = win ? 3 : 1;
+        c.xp += xp; c.training += training;
+        c.history.push({opponent:p.opponent,gf:result.gf,ga:result.ga});
+        notes.push(`Player career: +${training} training points.`);
+        if (c.round === 10 && c.points >= 18) {
+          c.titles++; coins += 400; packs += 2;
+          trophy(`Player Career Champion · Season ${c.season}`);
+          notes.push("Season target reached: player career title won!");
+        }
+      }
       if (p.kind === "career") {
         const c = d.career;
         need(

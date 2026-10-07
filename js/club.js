@@ -1,3 +1,5 @@
+import { renderPlayerCareer, readProForm } from "./player-career-ui.js";
+import { proCard } from "./player-career.js";
 import { PackOpening } from "./pack-opening.js";
 import {nationalityFor,flagSVG} from "./nationality.js";
 import { appearanceFor, portraitSVG, HAIR_STYLES } from "./appearance.js";
@@ -45,7 +47,19 @@ export class Club {
       const b = e.target.closest("[data-club]");
       if (b) this.act(b.dataset.club);
     });
+    this.el.addEventListener("submit", e => {
+      if (e.target.id !== "proForm") return;
+      e.preventDefault();
+      try { this.save.savePro(readProForm(e.target)); this.message = "Player saved. Your career is ready."; }
+      catch (err) { this.message = err.message; }
+      this.render();
+    });
+    this.el.addEventListener("input", e => {
+      const form = e.target.closest("#proForm");
+      if (form && form.checkValidity()) this.el.querySelector("#proPreview").innerHTML = this.card(proCard(readProForm(form)),true,false,false);
+    });
     this.el.addEventListener("change", (e) => {
+      if (e.target.closest("#proForm")) return;
       try {
         if (e.target.dataset.slot !== undefined)
           this.save.equip(+e.target.dataset.slot, e.target.value);
@@ -116,6 +130,12 @@ export class Club {
       } else if (verb === "kit") {
         this.save.kit(id);
         this.message = "Kit equipped.";
+      } else if (verb === "pro-train") {
+        this.save.trainPro(id);
+        this.message = "Training complete: +1 " + id + ".";
+      } else if (verb === "pro-season") {
+        this.save.nextPlayerSeason();
+        this.message = "Your next player-career season begins.";
       } else if (verb === "season") {
         this.save.nextSeason();
         this.message = "A new season begins.";
@@ -139,18 +159,18 @@ export class Club {
     }
   }
   card(c, owned = true, duplicate = false, actions = true) {
-    owned = owned && this.save.data.owned.includes(c.id);
+    owned = !!c.custom || (owned && this.save.data.owned.includes(c.id));
     const look = appearanceFor(c),nation=nationalityFor(c);
     const special=RARITIES.indexOf(c.rarity)>=5;
-    const status=duplicate ? `DUPLICATE · +${QUICK_SELL[c.rarity]} COINS` : owned ? (c.legacy ? "LEGACY · IN YOUR CLUB" : "IN YOUR CLUB") : "NOT COLLECTED";
-    return `<article class="playerCard ${c.rarity.toLowerCase()} ${special ? 'specialCard' : 'baseCard'} ${owned ? '' : 'locked'}" aria-label="${c.name}, ${c.rating} ${c.position}, ${c.rarity}, ${nation.name}">
+    const status=c.custom ? "YOUR PLAYER · CAREER CARD" : duplicate ? `DUPLICATE · +${QUICK_SELL[c.rarity]} COINS` : owned ? (c.legacy ? "LEGACY · IN YOUR CLUB" : "IN YOUR CLUB") : "NOT COLLECTED";
+    return `<article class="playerCard ${c.rarity.toLowerCase()} ${special ? 'specialCard' : 'baseCard'} ${owned ? '' : 'locked'}" aria-label="${esc(c.name)}, ${c.rating} ${c.position}, ${c.rarity}, ${nation.name}">
       <div class="cardFace" title="${HAIR_STYLES[look.style]}"><div class="cardInner"><div class="cardFoil" aria-hidden="true"></div>
       <div class="cardTop"><b>${c.rating}</b><span>${c.position}</span></div><div class="cardEdition">${c.rarity}</div>
       <div class="cardPortrait">${portraitSVG(look,c.position==='GK'?'#e9bf43':KITS.find(k=>k.id===this.save.data.kit).color)}</div>
-      <span class="cardEmblem" aria-hidden="true">P</span><div class="cardData"><h3>${c.name}</h3>
+      <span class="cardEmblem" aria-hidden="true">P</span><div class="cardData"><h3>${esc(c.name)}</h3>
       <div class="cardStats"><span><small>PAC</small><b>${c.pace}</b></span><span><small>SHO</small><b>${c.shoot}</b></span><span><small>PAS</small><b>${c.pass}</b></span></div>
       <div class="cardNation" title="${nation.name}">${flagSVG(nation)}<span>${nation.code}</span><span class="clubCrest" aria-hidden="true">P/</span></div></div></div></div>
-      <small class="cardStatus">${status}</small>${actions && owned && !duplicate && !this.save.data.squad.includes(c.id) ? button('sell:'+c.id,`QUICK SELL · ${QUICK_SELL[c.rarity]}`,!!this.save.data.pending):''}</article>`;
+      <small class="cardStatus">${status}</small>${actions && !c.custom && owned && !duplicate && !this.save.data.squad.includes(c.id) ? button('sell:'+c.id,`QUICK SELL · ${QUICK_SELL[c.rarity]}`,!!this.save.data.pending):''}</article>`;
   }
   quest(q, contract = false) {
     const d = this.save.data,
@@ -164,8 +184,9 @@ export class Club {
       locked = !!d.pending;
     let body = "";
     if (this.tab === "play") {
-      body = `<div class="clubIntro"><div><span class="eyebrow">YOUR CLUB. YOUR STORY.</span><h1>MAKE IT<br>COUNT.</h1><p>Build a squad. Chase silverware. Every match matters.</p></div><label>CLUB NAME<input id="clubName" maxlength="18" value="${esc(d.clubName)}" ${locked ? "disabled" : ""}></label></div><div class="modeCards"><article><small>THE LONG GAME</small><h2>CLUB CAREER</h2><p>Division ${c.division} · Season ${c.season}<br>10 fixtures. Top two earn promotion.</p>${button("tab:career", "VIEW SEASON →")}</article><article><small>THREE WINS FROM GLORY</small><h2>KNOCKOUT CUP</h2><p>${["Quarter-final", "Semi-final", "Final", "Champions"][d.cup.round]} · ${d.cup.status === "out" ? "Eliminated. Start a new run." : d.cup.status === "won" ? "Trophy secured. Defend it." : "Golden goal settles every tie."}</p>${button("start:cup", "ENTER CUP →", locked)}</article><article><small>STRAIGHT TO THE PITCH</small><h2>KICK OFF</h2><p>Custom matches, arena rules<br>and local two-player.</p>${button("quick", "MATCH SETUP →", locked)}</article></div><h2>MATCHDAY CHALLENGES</h2><div class="questGrid">${CHALLENGES.map((x) => `<article class="quest"><small>${d.challenges.includes(x.id) ? "COMPLETED ✓" : "FIRST WIN: 100 COINS + 1 PACK"}</small><h3>${x.name}</h3><p>${x.description}</p>${button("challenge:" + x.id, "TAKE THE CHALLENGE", locked)}</article>`).join("")}</div>`;
+      body = `<div class="clubIntro"><div><span class="eyebrow">YOUR CLUB. YOUR STORY.</span><h1>MAKE IT<br>COUNT.</h1><p>Build a squad. Chase silverware. Every match matters.</p></div><label>CLUB NAME<input id="clubName" maxlength="18" value="${esc(d.clubName)}" ${locked ? "disabled" : ""}></label></div><div class="modeCards"><article><small>YOUR OWN STAR</small><h2>PLAYER CAREER</h2><p>Create your player, choose stats and card rarity, then play ten-match seasons.</p>${button("tab:player", "CREATE YOUR LEGACY →")}</article><article><small>THE LONG GAME</small><h2>CLUB CAREER</h2><p>Division ${c.division} · Season ${c.season}<br>10 fixtures. Top two earn promotion.</p>${button("tab:career", "VIEW SEASON →")}</article><article><small>THREE WINS FROM GLORY</small><h2>KNOCKOUT CUP</h2><p>${["Quarter-final", "Semi-final", "Final", "Champions"][d.cup.round]} · ${d.cup.status === "out" ? "Eliminated. Start a new run." : d.cup.status === "won" ? "Trophy secured. Defend it." : "Golden goal settles every tie."}</p>${button("start:cup", "ENTER CUP →", locked)}</article><article><small>STRAIGHT TO THE PITCH</small><h2>KICK OFF</h2><p>Custom matches, arena rules<br>and local two-player.</p>${button("quick", "MATCH SETUP →", locked)}</article></div><h2>MATCHDAY CHALLENGES</h2><div class="questGrid">${CHALLENGES.map((x) => `<article class="quest"><small>${d.challenges.includes(x.id) ? "COMPLETED ✓" : "FIRST WIN: 100 COINS + 1 PACK"}</small><h3>${x.name}</h3><p>${x.description}</p>${button("challenge:" + x.id, "TAKE THE CHALLENGE", locked)}</article>`).join("")}</div>`;
     }
+    if (this.tab === "player") body = renderPlayerCareer(this, CLUBS);
     if (this.tab === "career") {
       const fixture =
           c.round < 10 ? SCHEDULE[c.round].find((f) => f.includes(0)) : null,
@@ -190,7 +211,7 @@ export class Club {
             )
               .map(
                 (c) =>
-                  `<option value="${c.id}" ${c.id === id ? "selected" : ""}>${c.name} · ${c.rating}</option>`,
+                  `<option value="${c.id}" ${c.id === id ? "selected" : ""}>${esc(c.name)} · ${c.rating}</option>`,
               )
               .join("")}</select></label>`,
         )
@@ -214,7 +235,8 @@ export class Club {
       body = `<h2>THE KIT ROOM</h2><div class="questGrid">${KITS.map((k) => `<article class="quest"><div class="kitSwatch" style="--kit:${k.color}">P /</div><h3>${k.name}</h3>${button("kit:" + k.id, d.kit === k.id ? "EQUIPPED" : d.kits.includes(k.id) ? "EQUIP" : `${k.cost} COINS`, locked || d.kit === k.id || (!d.kits.includes(k.id) && d.coins < k.cost))}</article>`).join("")}</div><h2>TROPHY CABINET</h2><div class="resultsList">${[...d.trophies, ...d.challenges.map((id) => "Challenge: " + CHALLENGES.find((c) => c.id === id).name)].map((t) => `<span>★ ${esc(t)}</span>`).join("") || "<p>Your first piece of silverware is waiting.</p>"}</div><h2>CLUB RECORD</h2><p>${d.stats.matches} matches · ${d.stats.wins} wins · ${d.stats.goals} goals · ${d.stats.passes} completed passes</p><h2>YOUR OFFLINE SAVE</h2><p>Progress is stored in this browser on this device. Export a backup to keep it when clearing browser data, moving devices or changing site addresses. Import replaces this device’s club.</p><div class="backupActions">${button("export", "EXPORT BACKUP")}<label class="fileLabel">IMPORT BACKUP<input id="saveFile" type="file" accept="application/json,.json"></label></div>`;
     this.el.innerHTML = `<header class="clubHeader"><b>P / FOOTBALL</b><div><span>LEVEL ${level(d.xp)}</span><strong>${d.coins} <small>COINS</small></strong><span>${d.packs} PACKS</span></div></header><nav class="clubTabs" aria-label="Club sections">${[
       ["play", "PLAY"],
-      ["career", "CAREER"],
+      ["career", "CLUB CAREER"],
+      ["player", "PLAYER CAREER"],
       ["squad", "SQUAD & CARDS"],
       ["shop", "PACK SHOP"],
       ["quests", "QUESTS"],
