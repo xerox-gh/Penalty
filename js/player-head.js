@@ -4,16 +4,58 @@ import {
   HAIR_COLORS,
   EYE_COLORS,
   hairParts,
+  hairTone,
 } from "./appearance.js";
 const ball = new T.IcosahedronGeometry(1, 1),
   box = new T.BoxGeometry(1, 1, 1);
-const cap = new T.SphereGeometry(1, 10, 5, 0, Math.PI * 2, 0, Math.PI / 2);
+const cap = new T.SphereGeometry(1, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2);
 const materials = (colors) =>
   colors.map((color) => new T.MeshStandardMaterial({ color, roughness: 0.95 }));
 export const skins = materials(SKIN_COLORS);
 const hairs = materials(HAIR_COLORS),
   eyes = materials(EYE_COLORS),
   mouth = new T.MeshStandardMaterial({ color: 0x603e35 });
+// Bake strands into one shared mesh: richer silhouettes without a draw call
+// for every curl. Cached by style/colour; no hair work in the animation loop.
+const hairGeometry = new Map();
+const strandMaterial = new T.MeshStandardMaterial({
+  vertexColors: true,
+  roughness: 0.88,
+});
+function styledHair(a) {
+  const key = `${a.style}:${a.hair}`;
+  if (!hairGeometry.has(key)) {
+    const positions = [],
+      normals = [],
+      colors = [];
+    const transform = new T.Object3D();
+    for (const p of hairParts(a)) {
+      transform.position.set(p.x, p.y, p.z);
+      transform.scale.set(p.sx, p.sy, p.sz);
+      transform.rotation.set(p.rx, 0, p.rz);
+      transform.updateMatrix();
+      const source = p.shape === "cap" ? cap : ball;
+      const geo = source.index ? source.toNonIndexed() : source.clone();
+      geo.applyMatrix4(transform.matrix);
+      positions.push(...geo.attributes.position.array);
+      normals.push(...geo.attributes.normal.array);
+      const color = new T.Color(hairTone(HAIR_COLORS[a.hair], p.tone));
+      for (let i = 0; i < geo.attributes.position.count; i++)
+        colors.push(color.r, color.g, color.b);
+      geo.dispose();
+    }
+    const geo = new T.BufferGeometry();
+    geo.setAttribute("position", new T.Float32BufferAttribute(positions, 3));
+    geo.setAttribute("normal", new T.Float32BufferAttribute(normals, 3));
+    geo.setAttribute("color", new T.Float32BufferAttribute(colors, 3));
+    geo.computeBoundingSphere();
+    hairGeometry.set(key, geo);
+  }
+  const mesh = new T.Mesh(hairGeometry.get(key), strandMaterial);
+  mesh.name = "hairstyle";
+  mesh.castShadow = true;
+  return mesh;
+}
 export function buildHead(a) {
   const root = new T.Group(),
     skin = skins[a.skin],
@@ -62,18 +104,6 @@ export function buildHead(a) {
   }
   if (a.facialHair === 2) add(box, hair, 0, -0.079, 0.16, 0.09, 0.026, 0.019);
   if (a.facialHair === 3) add(ball, hair, 0, -0.155, 0.114, 0.035, 0.04, 0.031);
-  for (const p of hairParts(a)) {
-    // Afro sits behind the face; the front stays open around the forehead.
-    add(
-      p.shape === "box" ? box : p.shape === "cap" ? cap : ball,
-      hair,
-      p.x,
-      p.y,
-      p.z,
-      p.sx,
-      p.sy,
-      p.sz,
-    );
-  }
+  if (a.style !== 9) root.add(styledHair(a));
   return root;
 }

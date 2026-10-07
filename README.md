@@ -95,7 +95,7 @@ Earned reward packs remain three-card packs with one guaranteed unowned guide pl
 
 ## Matching player appearances
 
-Each card and its in-game player share a deterministic appearance based on the stable player ID: buzz cut, textured crop, side part, quiff, curls, afro, locs, braids, bun or bald. Profiles also vary skin and hair colors, eye colors, face proportions, eyebrows, noses, mouths, beards, moustaches and goatees. Card tooltips show the hairstyle name. Keepers wear the same gold kit in their home card portrait and on the pitch.
+Each card and its in-game player share a deterministic appearance based on the stable player ID: buzz cut, textured crop, side part, quiff, curls, afro, locs, braids, bun or bald. Profiles also vary skin and hair colors, eye colors, face proportions, eyebrows, noses, mouths, beards, moustaches and goatees. Hair now has swept layered locks, tapered temples, rounded locs, scalp-following braided rows, and textured curls/afros with subtle highlights. Strand geometry is baked and cached as one mesh per head to keep match draw calls low. Card tooltips show the hairstyle name. Keepers wear the same gold kit in their home card portrait and on the pitch.
 
 `js/appearance.js` owns the shared profiles and hair shapes, plus the procedural SVG portraits. `js/player-head.js` builds low-poly 3D heads using shared geometries/materials. No image downloads or save migration are required. These are stylized matching features, not photorealistic portraits or a player appearance editor.
 
