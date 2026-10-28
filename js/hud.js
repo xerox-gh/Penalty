@@ -51,7 +51,7 @@ export class HUD {
         ? Math.ceil(g.state.timer)
         : s === "lineup"
           ? "MATCH DAY"
-          : g.notice;
+          : s === "setpiece" ? "" : g.notice;
     document.getElementById("matchInfo").textContent =
       `${g.options.fieldMode.toUpperCase()} • ${["BROADCAST", "TACTICAL", "CLASSIC", "PLAYER"][g.camera.mode]} • ${g.ball.owner?.team === 0 ? "IN POSSESSION" : g.ball.owner ? "DEFEND" : "LOOSE BALL"}`;
     const c = this.radar;

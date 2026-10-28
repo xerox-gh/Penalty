@@ -148,7 +148,7 @@ Touch devices display a joystick and eight action buttons. Use movement directio
 
 ## Tuning / scope
 
-`js/config.js` holds pitch dimensions, player speeds/stamina, ball constants, formation anchors, difficulty and timing. Goalkeepers and field-player heuristics live in their respective modules. This is an arcade implementation: no fouls, cards, offside, substitutions or halftime. Restarts take 1.5 seconds and automatically position the nearest outfield taker. The goal camera is a live celebration swing, not a recorded replay. Audio is synthesized; crowd ambience is filtered noise. No multiplayer networking.
+`js/config.js` holds pitch dimensions, player speeds/stamina, ball constants, formation anchors, difficulty and timing. Goalkeepers and field-player heuristics live in their respective modules. This is an arcade implementation: slide-contact fouls are implemented, but cards, offside, substitutions and halftime are not. Restarts use a short setup phase followed by interactive aiming; see the set-piece guide below. The goal camera is a live celebration swing, not a recorded replay. Audio is synthesized; crowd ambience is filtered noise. No multiplayer networking.
 
 Low-poly procedural animations cover running, kicking, sliding, diving and celebration; these are simple rigid-part poses, not skeletal motion capture. The offline career keeps the current season’s results and club statistics. Quality performance varies by GPU; use Low on older hardware.
 
@@ -168,7 +168,7 @@ Run `node tests/progression.mjs` with a current Node.js version. Tests cover all
 - [ ] No browser console errors or missing assets.
 - [ ] Ten players stay on pitch, keep formation and contest possession.
 - [ ] Move/sprint/pass/charge shot/chip/slide/switch, score into both goals.
-- [ ] Check keeper saves/distribution, kick-ins, goal kicks and corners.
+- [ ] Check keeper saves/distribution, kick-ins, goal kicks, corners, free kicks and penalties.
 - [ ] Pause/resume, hide tab, finish match, golden goal, play again.
 - [ ] Test local P2 and a standard-mapping gamepad.
 - [ ] Test mobile joystick/buttons in portrait and landscape.
@@ -189,3 +189,25 @@ Player-career fixtures last two minutes and lock control to your player, includi
 Each season has ten fixtures. Earn three points for a win and one for a draw; reaching 18 points earns a title, 400 bonus coins and two packs. Wins award three training points, draws/losses one. Spend a training point for +1 to a chosen stat (maximum 100). You can also edit your creation between matches without resetting career progress. Start the next season after all ten fixtures; appearances, wins, XP, titles and unspent training points carry over. Career progress and the custom player are included in the normal offline save and backup export/import. Older saves migrate with no player career until one is created.
 
 `node tests/player-career.mjs` covers creation, appearance, validation, old-save migration, pending-match recovery, training, ten-fixture season rewards, duplicate settlement, backups and isolation from club career. Browser checks cover live preview, a playable custom midfielder with locked controls, match rewards/training, a 390px mobile layout and offline reload without console errors.
+
+### Fouls and set pieces
+
+Sliding into an opponent near the ball without reaching the ball first now awards a direct free kick, or a penalty inside the defending team's painted box. Clean ball-first tackles and ordinary body contact remain legal. Penalties use the existing six-metre spot, with the goalkeeper on the goal line and other outfield players outside the area/arc. Free kicks in the attacking half get a two-player wall at a five-metre small-sided distance. These are arcade, small-sided rules: no cards, offside, handball, advantage or penalty shootout mode.
+
+All restarts now pause for positioning, then show an aiming panel and a dedicated camera. Corners place attackers at the near post, central area and far post with defenders goal-side. On delivery they make short attacking runs and tracking runs. High balls can be headed towards goal or cleared automatically on contact, and walls block body-height shots. Goal kicks start inside the goal area, while kick-ins use the touchline (inside the boards in Arena). The match clock pauses during setup/aiming. A penalty awarded before full-time is allowed to finish its flight, save or miss.
+
+| Action | Mouse / touch | Keyboard P1 / P2 | Gamepad P1 |
+|---|---|---|---|
+| Aim | Tap target, or drag from the white ball | WASD / arrows (P1 may also use arrows in solo) | Left stick |
+| Shoot / deliver | Drag from ball toward target and release, or TAKE KICK | Hold/release Space / Enter | Hold/release A |
+| Curl | Bend the stroke; or cycle CURL button | R / semicolon | RT |
+| Short restart (except penalties) | SHORT PASS | E / slash | B |
+| Driven / lofted delivery | Delivery button | Q / period | X |
+| Defend a penalty | Choose DIVE LEFT, CENTER or RIGHT before the shot | Left/right movement keys | Left stick |
+| Pause | Pause button | P / Esc | — |
+
+Longer gestures add power. The red power zone increases the chance of shooting over; targets beyond the posts or above the crossbar can miss. Curved strokes add spin (reduced on penalties). Corners and goal kicks default to lofted delivery. A cancelled touch does not fire. Human restarts auto-take after 25 seconds; AI restarts take roughly three seconds. Keeper directions are relative to the panel/behind-taker camera. When defending an AI penalty, its chosen target is hidden. Player Career keeps your created player selected after the kick; they take outfield restarts and the AI goalkeeper takes goal kicks.
+
+Tuning lives in `CFG.setPiece` in `js/config.js`; `js/set-pieces.js` owns restart positioning/ballistics and `js/set-piece-ui.js` owns the pointer aiming panel. The service-worker version is bumped and installation bypasses stale HTTP assets. Reload online to receive the update; existing club/career saves are unchanged.
+
+Validation: `node tests/set-pieces.mjs` checks fouls at both ends, box boundaries, legal tackles, wall distance, penalty exclusion, every restart for both teams, AI/career control, shot height, body blocks, camera-relative aim and full-time penalty extension. Headless Chromium checks mouse penalty strokes, keyboard corner charging, short free kicks, pause/resume, touch drag/cancellation at 390px, AI penalty/keeper selection and offline reload from `/Penalty/`. Physical gamepad and real-device Safari/Firefox validation remain outstanding.

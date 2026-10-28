@@ -88,6 +88,7 @@ export class Ball {
         this.vz = challenger.dz * 11;
         this.vy = 1;
         challenger.cooldown = 0.6;
+        challenger.cleanSlide = true;
         carrier.cooldown = 0.35;
         this.audio.play("kick");
       } else if (distance(carrier, this) < 2.7 && this.y < 1.3) {
@@ -135,12 +136,28 @@ export class Ball {
       nearest = Infinity;
     for (const p of players) {
       const d = distance(p, this);
-      if (p.keeper || p.cooldown > 0 || this.y > 1.1) continue;
+      if (p.keeper || p.cooldown > 0) continue;
+      // Aerial deliveries can be headed towards goal or cleared; the wall also
+      // blocks waist/chest-height attempts instead of letting them pass through.
+      if (this.y > 1.1) {
+        if(d < .85 && this.y < 2.35 && (this.freeTime === 0 || p.team !== this.lastTeam)) {
+          const dir=p.team===0?1:-1;
+          const attacking=p.team===this.lastTeam && (30-p.x*dir)<13;
+          if(this.y>1.65) {
+            const dz=attacking?-p.z: p.z*.2,dx=dir*(attacking?30-p.x*dir:20),len=Math.hypot(dx,dz);
+            this.vx=dx/len*(attacking?17:14);this.vz=dz/len*(attacking?17:14);this.vy=attacking?1.5:5;
+            p.kick=.3;this.audio.play("kick");
+          } else {this.vx*=-.45;this.vz*=-.45;this.vy=2;}
+          this.owner=null;this.lastTeam=p.team;this.freeTime=.25;p.cooldown=.4;return;
+        }
+        continue;
+      }
       if (p.slide > 0 && d < CFG.control.tackleReach) {
         this.vx = p.dx * 13;
         this.vz = p.dz * 13;
         this.lastTeam = p.team;
         p.cooldown = 0.5;
+        p.cleanSlide = true;
         this.freeTime = 0.2;
         return;
       }

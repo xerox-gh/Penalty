@@ -9,7 +9,13 @@ export function goalkeeper(p, team, ball, dt, audio) {
   const dx = p.target.x - p.x,
     dz = p.target.z - p.z,
     l = Math.hypot(dx, dz);
-  p.move(l > 0.15 ? dx / l : 0, l > 0.15 ? dz / l : 0, incoming, dt, 0.88);
+  if(p.penaltyDiveTime > 0) {
+    p.penaltyDiveTime=Math.max(0,p.penaltyDiveTime-dt);
+    p.penaltyReaction=Math.max(0,p.penaltyReaction-dt);
+    const side=p.penaltyZ-p.z;
+    p.move(0,p.penaltyReaction>0||Math.abs(side)<.2?0:Math.sign(side),true,dt,1.15);
+    p.dive=.35;
+  } else p.move(l > 0.15 ? dx / l : 0, l > 0.15 ? dz / l : 0, incoming, dt, 0.88);
   if (ball.held > 0 && ball.owner === p) {
     ball.x = p.x + team.dir * 0.8;
     ball.z = p.z;

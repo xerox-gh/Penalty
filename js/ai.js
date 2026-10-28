@@ -43,7 +43,7 @@ export function decide(team, enemy, ball, difficulty, human) {
       .sort((a, b) => distance(a, ball) - distance(b, ball))
       .slice(0, possession && carrier ? 0 : diff.press);
   for (const p of team.players) {
-    if (p.keeper || p === human) continue;
+    if (p.keeper || p === human || p.setPieceRun > 0) continue;
     const near = distance(p, ball);
     p.aiWait =
       near < CFG.player.kickRange ? (p.aiWait || 0) + 1 / CFG.match.aiHz : 0;
@@ -124,6 +124,7 @@ export function decide(team, enemy, ball, difficulty, human) {
       p.tackleCooldown <= 0 &&
       p.cooldown <= 0
     ) {
+      p.cleanSlide = false;
       p.slide = 0.4;
       p.tackleCooldown = CFG.control.tackleCooldown;
     }

@@ -1,5 +1,5 @@
 // Bump the version whenever shipping changed files; cache URLs stay inside the repo scope.
-const CACHE = "penalty-v11";
+const CACHE = "penalty-v12";
 const FILES = [
   "./",
   "./index.html",
@@ -24,6 +24,8 @@ const FILES = [
   "./js/ai.js",
   "./js/goalkeeper.js",
   "./js/rules.js",
+  "./js/set-pieces.js",
+  "./js/set-piece-ui.js",
   "./js/input.js",
   "./js/camera.js",
   "./js/hud.js",
@@ -34,7 +36,7 @@ self.addEventListener("install", (e) =>
   e.waitUntil(
     caches
       .open(CACHE)
-      .then((c) => c.addAll(FILES))
+      .then((c) => c.addAll(FILES.map(url => new Request(url, {cache: "reload"}))))
       .then(() => self.skipWaiting()),
   ),
 );

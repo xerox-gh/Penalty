@@ -24,6 +24,10 @@ export class Team {
       p.vx = p.vz = 0;
       p.target.x = p.x;
       p.target.z = p.z;
+      p.cleanSlide = false;
+      p.penaltyDiveTime = 0;
+      p.setPieceHold = 0;
+      p.setPieceRun = 0;
       p.charge = 0;
       p.runTimer = 0;
       p.precision = false;

@@ -1,3 +1,4 @@
+import { SetPieceUI } from "./set-piece-ui.js";
 import { proCard, proSlot } from "./player-career.js";
 import * as T from "../libs/three.module.js";
 import { CFG, distance, clamp } from "./config.js";
@@ -35,6 +36,7 @@ class Game {
     this.audio = new Audio();
     this.input = new Input();
     this.hud = new HUD();
+    this.setPieceUI = new SetPieceUI(this);
     this.scene = new T.Scene();
     this.scene.background = new T.Color(0x6b91ad);
     this.scene.fog = new T.Fog(0x6b91ad, 75, 180);
@@ -363,6 +365,7 @@ class Game {
     }
     if (c.lobEdge) this.ball.kick(p, shotX, shotZ, 16, 10);
     if (c.tackleEdge && p.tackleCooldown <= 0) {
+      p.cleanSlide = false;
       p.slide = 0.5;
       p.tackleCooldown = CFG.control.tackleCooldown;
       p.vx += p.dx * 5;
@@ -418,6 +421,7 @@ class Game {
       if (!this.state.timer) this.rules.takeRestart();
       return;
     }
+    if (s === "setpiece") { this.rules.updateRestart(dt); return; }
     this.aiTime -= dt;
     if (this.aiTime <= 0) {
       this.aiTime = 1 / CFG.match.aiHz;
@@ -437,11 +441,15 @@ class Game {
       const controlledIndex = human ? team.active : -1;
       if (human) this.human(team, dt, team.id === 1);
       for (const p of team.players) {
+        p.setPieceRun = Math.max(0,(p.setPieceRun || 0)-dt);
         if (p.keeper) goalkeeper(p, team, this.ball, dt, this.audio);
+        else if (p.setPieceHold > 0) { p.setPieceHold = Math.max(0,p.setPieceHold-dt); p.vx=p.vz=0; }
         else if (p.index !== controlledIndex)
           moveAI(p, dt, CFG.difficulty[this.options.difficulty].speed);
       }
-    } // Resolve player overlap with a small symmetric displacement.
+    }
+    if (this.rules.checkFouls()) return;
+    // Resolve player overlap with a small symmetric displacement.
     for (let i = 0; i < 10; i++)
       for (let j = i + 1; j < 10; j++) {
         const a = this.players[i],
@@ -552,7 +560,9 @@ class Game {
       this.state.name === "hub" ? "menu" : this.state.name,
       this.time,
       dt,
+      this.rules.restart,
     );
+    this.setPieceUI.update();
     this.hud.update(this);
     this.renderer.render(this.scene, this.camera.camera);
     this.fpsTime += dt;

@@ -63,7 +63,7 @@ rules.update(1 / 60);
 assert.equal(g.notice, "KICK-IN");
 assert.equal(rules.restart.team, 1);
 rules.takeRestart();
-assert.equal(g.state.name, "playing");
+assert.equal(g.state.name, "setpiece");
 ball.reset(31, 12);
 ball.lastTeam = 1;
 rules.update(1 / 60);

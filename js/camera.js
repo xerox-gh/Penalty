@@ -13,7 +13,7 @@ export class Camera {
   toggle() {
     this.mode = (this.mode + 1) % 4;
   }
-  update(ball, p, state, time, dt) {
+  update(ball, p, state, time, dt, restart = null) {
     const x = clamp(ball.x * 0.7 + p.x * 0.3 + ball.vx * 0.16, -22, 22),
       z = clamp(ball.z * 0.65 + p.z * 0.35, -12, 12);
     const spread = Math.min(8, Math.hypot(ball.x - p.x, ball.z - p.z) * 0.18);
@@ -29,6 +29,15 @@ export class Camera {
         ball.z + Math.sin(time) * 10,
       );
       this.look.set(ball.x, 1, ball.z);
+    } else if (state === "setpiece" && restart) {
+      const r=restart, dir=r.dir;
+      if(r.type === "PENALTY" || r.type === "FREE KICK") {
+        this.pos.set(r.x-dir*(portrait?19:11),portrait?11:6.5,r.z+dir*.4);
+        this.look.set(dir*30,portrait?-1.5:1.4,0);
+      } else {
+        this.pos.set(r.x-dir*12,22+portrait,r.z+Math.sign(r.z||1)*12);
+        this.look.set(r.type==="CORNER"?dir*25:r.x+dir*12,0,r.z*.25);
+      }
     } else if (this.mode === 0)
       this.pos.set(x - 3, 32 + spread + portrait, z + 38 + portrait);
     else if (this.mode === 1) this.pos.set(x, 46 + portrait, z + 23);

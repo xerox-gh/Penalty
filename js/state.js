@@ -14,7 +14,7 @@ export class State {
   pause() {
     if (this.name === "paused") this.name = this.previous;
     else if (
-      ["playing", "countdown", "lineup", "goal", "restart"].includes(this.name)
+      ["playing", "countdown", "lineup", "goal", "restart", "setpiece"].includes(this.name)
     ) {
       this.previous = this.name;
       this.name = "paused";
