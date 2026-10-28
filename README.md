@@ -13,7 +13,30 @@ A static, procedural 3D arcade soccer game: 4 outfield players and a goalkeeper 
 
 Save safety constants are in `js/save-health.js`; attribute derivation in `js/card-stats.js`; venue/turf palettes in `js/venues.js`; gait/action timing in `js/animation.js`; world fixtures and season movement in `js/world.js`. World Career currently keeps one selected club per save and the current season's results. Keep an exported backup if you want to experiment with another save.
 
-Validation for this update: all nine Node test suites pass, including full promotion/relegation seasons, legacy stat migration, bad counters, structural corruption, backup recovery and write protection. Headless Chromium checks passed under `/Penalty/` for a playable ten-player world fixture, result settlement/simulation, all four venue selections, turf persistence, Save Health repair, a 390px mobile layout, and offline reload with no console errors. Real-device performance and Safari/Firefox/Edge testing remain outstanding.
+Validation for this update: all ten Node test suites pass, including full promotion/relegation seasons, legacy stat migration, bad counters, structural corruption, backup recovery and write protection. Headless Chromium checks passed under `/Penalty/` for a playable ten-player world fixture, result settlement/simulation, all four venue selections, turf persistence, Save Health repair, a 390px mobile layout, and offline reload with no console errors. Real-device performance and Safari/Firefox/Edge testing remain outstanding.
+
+## League teams, assisted play and cups
+
+**Club Career and Player Career now have a team selector at the top of their tabs.** Browse a division, then choose a league club. Club Career uses its five-player roster and five same-division opponents in the existing ten-match season. Player Career inserts your created player into that club's lineup, with league opponents and the existing training/progression system. The full home-and-away calendar remains in World Leagues. Team choice locks for the season; finish it and press Start Next Season before changing clubs. Existing saves start with their collectible squad selected and retain their progress.
+
+The Home tab also offers separate league-team choices for Quick Match, the classic knockout cup and challenges. **My collectible squad** restores your equipped card roster. World Leagues and exhibitions keep their existing club selectors. League selection uses generated club rosters rather than replacing or consuming collectible cards.
+
+**AI Assist** is available on Home and the career/cup screens. With it enabled, the AI moves, passes and shoots for your active player when you leave the controls alone. Any movement or action gives you control immediately; assistance resumes after 1.25 seconds without input. This also works for the locked created player. The match HUD distinguishes AI ASSIST from YOU CONTROL. Local player two remains manual. Restarts retain their normal aiming controls and existing automatic timeout. The setting is captured in a pending fixture so resume uses the same mode.
+
+Open **Cups** for four persistent offline tournaments:
+
+| Cup | Teams | Format |
+|---|---:|---|
+| International Cup | 32 national teams | Five knockout rounds |
+| Europe Cup | 16 European league clubs | Four knockout rounds |
+| Europe Nation Cup | 16 European national teams | Four knockout rounds |
+| World Club Cup | 16 league clubs from the world pool | Four knockout rounds |
+
+Choose an eligible team, enter the draw, and play each fixture. All other ties in your round are simulated; the current bracket and every completed round are visible. Tied games continue to golden goal. A title earns 700 bonus coins, three packs and a named trophy, in addition to match rewards. Each cup retains its own run; after elimination or victory you can enter again with another team and a new draw. These are original small-sided knockout formats with fictional players, not licensed recreations of real competitions or their group-stage/qualification rules. Elimination ends your run; later rounds are not simulated after you exit.
+
+Implementation: `js/competitions.js` owns eligibility, national rosters, team mappings, deterministic draws and bracket validation; `js/competition-ui.js` owns selectors and cup screens. New save fields migrate automatically. Service-worker v14 precaches both modules for offline use. `node tests/competitions.mjs` checks every selectable mode, complete runs of all four cups, losses/re-entry, nationalities, save migration, season locks and reward protection.
+
+Validation for the cups update: all ten Node suites passed. Headless Chromium verified league Club/Player Career selection, created-player insertion, AI/manual handoff, national team rosters, cup advancement, a 390px mobile layout, and the next cup fixture after an offline reload under `/Penalty/`, with no console errors. Physical mobile devices and Safari/Firefox/Edge remain unverified.
 
 ## Play locally
 
@@ -229,3 +252,7 @@ Validation: `node tests/set-pieces.mjs` checks fouls at both ends, box boundarie
 - [ ] Save Health repairs bad counters without losing cards/careers; recovery export retains the original.
 - [ ] World fixture results persist; promotion/relegation retains the selected club.
 - [ ] All four stadiums, seven turf colors and five card stats render on mobile.
+
+- [ ] Pick a league club in Club/Player Career and verify teammates, opponents and created-player control.
+- [ ] AI Assist takes over when idle and hands control back on input.
+- [ ] Complete a cup round, reload offline, and resume the saved bracket.

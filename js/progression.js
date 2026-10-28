@@ -1,3 +1,4 @@
+import { CUPS, newCup, cupOpponent, recordCup, validateCups, validateSelections, careerClubs } from './competitions.js';
 import { worldClub, newWorldCareer, validateWorld, worldFixture, recordWorld, nextWorldSeason, standings } from "./world.js";
 import { venueSettings } from "./venues.js";
 import { extendedStats } from "./card-stats.js";
@@ -391,6 +392,9 @@ export function freshSave() {
       claimed: [],
     },
     presentation: venueSettings(),
+    modeClubs: validateSelections(),
+    aiAssist: false,
+    tournaments: {},
     career: newCareer(),
     playerCareer: null,
     worldCareer: null,
@@ -532,17 +536,25 @@ export function validateSave(source) {
       d.trophies.every((t) => typeof t === "string" && t.length <= 80),
     "Invalid trophies.",
   );
+  d.modeClubs=validateSelections(d.modeClubs);
+  d.tournaments=validateCups(d.tournaments);
+  d.aiAssist=d.aiAssist??false;need(typeof d.aiAssist==='boolean',"Invalid AI assistance setting.");
   d.worldCareer = validateWorld(d.worldCareer);
   d.presentation = venueSettings(d.presentation);
   d.playerCareer = validatePlayerCareer(d.playerCareer);
   if (d.pending) {
     const p = d.pending;
+    need(p.aiAssist==null||typeof p.aiAssist==='boolean',"Invalid pending assistance mode.");
+    if(p.worldHome!=null||p.worldAway!=null)need(worldClub(p.worldHome)&&worldClub(p.worldAway)&&p.worldHome!==p.worldAway,"Invalid league team selection.");
+    if(p.kind!=='tournament')need(p.homeRef==null&&p.awayRef==null,"Unexpected tournament teams.");
+    if(d.modeClubs[p.kind]!=null){const clubs=careerClubs(d.modeClubs[p.kind]);need(p.worldHome===clubs[0].id&&p.worldAway===clubs[p.opponent]?.id,"Selected club does not match the pending fixture.");}
+    if(p.kind==='tournament'){const t=d.tournaments[p.cupId];need(t&&t.status==='active'&&p.round===t.round&&p.homeRef===t.team&&p.awayRef===cupOpponent(t),"Invalid cup fixture.");}
     if (["world","exhibition"].includes(p.kind)) need(worldClub(p.worldHome)&&worldClub(p.worldAway)&&p.worldHome!==p.worldAway,"Invalid world clubs.");
     if(p.kind==="world")need(d.worldCareer && p.worldHome===d.worldCareer.club && p.round===d.worldCareer.round && p.season===d.worldCareer.season && worldFixture(d.worldCareer)?.includes(p.worldAway),"Invalid world fixture.");
     need(
       validInt(p.id) &&
         p.id <= d.serial &&
-        ["quick", "career", "cup", "challenge", "player", "world", "exhibition"].includes(p.kind) &&
+        ["quick", "career", "cup", "challenge", "player", "world", "exhibition", "tournament"].includes(p.kind) &&
         validInt(p.opponent, 7),
       "Invalid pending match.",
     );
@@ -818,11 +830,20 @@ export class Progression {
   }
   startWorld(club) { this.change(d=>{need(!d.pending,"Finish or abandon the pending match first.");need(!d.worldCareer,"A World League career already exists. Continue it or use Exhibition to try other clubs.");d.worldCareer=newWorldCareer(Number(club));}); }
   nextWorld() { this.change(d=>{need(!d.pending && d.worldCareer,"Finish the pending match first.");nextWorldSeason(d.worldCareer);}); }
+  selectModeClub(mode,id) {this.change(d=>{
+    need(!d.pending,"Finish or abandon the pending match first.");
+    need(['career','player','cup','challenge','quick'].includes(mode),"Unknown mode.");
+    const c=mode==='career'?d.career:mode==='player'?d.playerCareer:null;
+    need(!c||c.round===0,"Finish this season and start the next season before changing its team.");
+    need(mode!=='cup'||d.cup.status!=='active',"Finish this cup before changing teams.");
+    need(id===null||(Number.isInteger(id)&&worldClub(id)),"Choose a league team.");d.modeClubs[mode]=id;
+  });}
+  createTournament(id,team){this.change(d=>{need(!d.pending,"Finish the pending match first.");const old=d.tournaments[id];need(!old||old.status!=='active',"Continue the current cup first.");d.tournaments[id]=newCup(id,team,(old?.attempt||0)+1);});}
   begin(kind, challenge) {
     return this.change((d) => {
       need(!d.pending, "Resume or abandon your pending match first.");
       need(
-        ["quick", "career", "cup", "challenge", "player", "world", "exhibition"].includes(kind),
+        ["quick", "career", "cup", "challenge", "player", "world", "exhibition", "tournament"].includes(kind),
         "Unknown mode.",
       );
       let opponent = 1;
@@ -858,6 +879,12 @@ export class Progression {
         p.challenge = challenge;
         p.opponent = 4;
       }
+      if(kind==='tournament'){
+        const c=d.tournaments[challenge];need(cupOpponent(c),"Choose a team and enter this cup first.");
+        Object.assign(p,{cupId:challenge,homeRef:c.team,awayRef:cupOpponent(c),round:c.round});
+      }
+      if(d.modeClubs[kind]!=null){const clubs=careerClubs(d.modeClubs[kind]);Object.assign(p,{worldHome:clubs[0].id,worldAway:clubs[p.opponent].id});}
+      p.aiAssist=d.aiAssist;
       d.pending = p;
       return clone(p);
     });
@@ -884,6 +911,7 @@ export class Progression {
         validInt(result[k], k === "gf" || k === "ga" ? 100 : 10000),
         "Invalid match result.",
       );
+    need(!['tournament','cup'].includes(this.data.pending.kind)||result.gf!==result.ga,"A knockout match needs a winner.");
     return this.change((d) => {
       const p = d.pending;
       d.pending = null;
@@ -903,6 +931,12 @@ export class Progression {
       const trophy = (t) => {
         if (d.trophies.length < 100) d.trophies.push(t);
       };
+      if(p.kind==='tournament'){
+        const c=d.tournaments[p.cupId];need(c&&c.round===p.round,"Cup result already recorded.");recordCup(c,result.gf,result.ga);
+        const name=CUPS.find(x=>x.id===p.cupId).name;
+        if(c.status==='won'){coins+=700;packs+=3;d.stats.cups++;trophy(`${name} · Champion ${c.attempt}`);notes.push(`${name} champions!`);}
+        else notes.push(c.status==='out'?`${name}: eliminated. Enter again for a fresh draw.`:`${name}: through to the next round.`);
+      }
       if(p.kind === "world") {
         const c=d.worldCareer;need(c && c.round===p.round && c.season===p.season,"Fixture already processed.");recordWorld(c,result.gf,result.ga);
         if(!worldFixture(c)){const rank=standings(c.table).findIndex(t=>t.id===c.club)+1;notes.push(`World League season complete: position ${rank}.`);if(rank===1){coins+=500;packs+=2;trophy(`World League Champion · Season ${c.season}`);}}

@@ -1,3 +1,4 @@
+import {modeTeamPicker,assistPicker,cupMenu,displayCareerClubs} from './competition-ui.js';
 import { homeMenu, worldMenu, settingsMenu, healthMenu } from "./overhaul-ui.js";
 import { WORLD_LEAGUES, worldClub } from "./world.js";
 import { STADIUMS, PITCH_COLORS } from "./venues.js";
@@ -68,6 +69,9 @@ export class Club {
       if(e.target.id==="worldHome"){this.worldHome=Number(e.target.value);return;}
       if(e.target.id==="worldAway"){this.worldAway=Number(e.target.value);return;}
       try {
+        if(e.target.dataset.modeLeague){this.modeLeague??={};this.modeLeague[e.target.dataset.modeLeague]=Number(e.target.value);this.render();return;}
+        if(e.target.dataset.modeTeam){this.save.selectModeClub(e.target.dataset.modeTeam,e.target.value===''?null:Number(e.target.value));this.message='Team selection saved for this mode.';this.render();return;}
+        if(e.target.id==='cupTeam'){this.cupTeam??={};this.cupTeam[this.cupChoice||'international']=e.target.value;return;}
         if (e.target.dataset.slot !== undefined)
           this.save.equip(+e.target.dataset.slot, e.target.value);
         if (e.target.id === "clubName") this.save.rename(e.target.value);
@@ -105,6 +109,10 @@ export class Club {
       if (verb === "tab") {
         this.tab = id;
         this.reveal = [];
+      } else if(verb==='assist'){if(this.save.data.pending)throw Error('Finish the pending match first.');this.save.change(d=>d.aiAssist=!d.aiAssist);this.message='AI assistance setting saved.';
+      } else if(verb==='cup-view'){this.cupChoice=id;
+      } else if(verb==='cup-enter'){this.save.createTournament(id,this.el.querySelector('#cupTeam').value);this.message='Draw complete. Your cup is ready.';
+      } else if(verb==='cup-play'){this.game.startMode('tournament',id);return;
       } else if (verb === "world-create") {
         this.save.startWorld(Number(this.el.querySelector('#worldHome').value));this.message="World League career created.";
       } else if (verb === "world-exhibition") {
@@ -210,25 +218,27 @@ export class Club {
       c = d.career,
       locked = !!d.pending;
     let body = "";
-    if (this.tab === "play") body=homeMenu(this);
-    if (this.tab === "world") body=worldMenu(this);
+    if (this.tab === "play") body=homeMenu(this)+assistPicker(this)+modeTeamPicker(this,'quick','QUICK MATCH')+modeTeamPicker(this,'cup','CLASSIC KNOCKOUT CUP')+modeTeamPicker(this,'challenge','CHALLENGES');
+    if(this.tab==='cups')body=cupMenu(this)+assistPicker(this);
+    if (this.tab === "world") body=worldMenu(this)+assistPicker(this);
     if (this.tab === "settings") body=settingsMenu(this);
     if (this.tab === "health") body=healthMenu(this);
-    if (this.tab === "player") body = renderPlayerCareer(this, CLUBS);
+    if (this.tab === "player") body = modeTeamPicker(this,"player","PLAYER CAREER")+assistPicker(this)+renderPlayerCareer(this, displayCareerClubs(this,"player",CLUBS));
     if (this.tab === "career") {
+      const leagueClubs=displayCareerClubs(this,"career",CLUBS);
       const fixture =
           c.round < 10 ? SCHEDULE[c.round].find((f) => f.includes(0)) : null,
-        opponent = fixture ? CLUBS[fixture.find((i) => i !== 0)] : null;
-      body = `<div class="sectionHeading"><div><span class="eyebrow">DIVISION ${c.division} / SEASON ${c.season}</span><h2>${opponent ? `NEXT: ${opponent.name}` : "SEASON COMPLETE"}</h2><p>${opponent ? `Matchday ${c.round + 1} of 10 · 2 minutes · ${["Hard", "Medium", "Easy"][c.division - 1]}` : `Finished ${c.lastFinish?.rank || "—"} of 6. ${c.lastFinish?.promoted ? "Promotion earned!" : "Time to go again."}`}</p></div>${button(opponent ? "start:career" : "season", opponent ? "PLAY FIXTURE →" : "START NEXT SEASON →", locked)}</div><div class="tableScroll"><table><thead><tr><th>POS</th><th>CLUB</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>PTS</th></tr></thead><tbody>${tableOrder(
+        opponent = fixture ? leagueClubs[fixture.find((i) => i !== 0)] : null;
+      body = modeTeamPicker(this,"career","CLUB CAREER")+assistPicker(this)+`<div class="sectionHeading"><div><span class="eyebrow">DIVISION ${c.division} / SEASON ${c.season}</span><h2>${opponent ? `NEXT: ${opponent.name}` : "SEASON COMPLETE"}</h2><p>${opponent ? `Matchday ${c.round + 1} of 10 · 2 minutes · ${["Hard", "Medium", "Easy"][c.division - 1]}` : `Finished ${c.lastFinish?.rank || "—"} of 6. ${c.lastFinish?.promoted ? "Promotion earned!" : "Time to go again."}`}</p></div>${button(opponent ? "start:career" : "season", opponent ? "PLAY FIXTURE →" : "START NEXT SEASON →", locked)}</div><div class="tableScroll"><table><thead><tr><th>POS</th><th>CLUB</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>PTS</th></tr></thead><tbody>${tableOrder(
         c,
       )
         .map(
           (r, i) =>
-            `<tr class="${r.id === 0 ? "yourClub" : ""}"><td>${i + 1}</td><td>${esc(r.id ? CLUBS[r.id].name : d.clubName)}</td><td>${r.played}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td>${r.gf - r.ga}</td><td><b>${r.pts}</b></td></tr>`,
+            `<tr class="${r.id === 0 ? "yourClub" : ""}"><td>${i + 1}</td><td>${esc(r.id ? leagueClubs[r.id].name : d.modeClubs.career!=null?leagueClubs[0].name:d.clubName)}</td><td>${r.played}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td>${r.gf - r.ga}</td><td><b>${r.pts}</b></td></tr>`,
         )
         .join(
           "",
-        )}</tbody></table></div><h3>SEASON RESULTS</h3><div class="resultsList">${c.history.map((r) => `<span>${CLUBS[r.opponent].name} <b>${r.gf} – ${r.ga}</b></span>`).join("") || "<p>Your story starts at the first whistle.</p>"}</div>`;
+        )}</tbody></table></div><h3>SEASON RESULTS</h3><div class="resultsList">${c.history.map((r) => `<span>${leagueClubs[r.opponent].name} <b>${r.gf} – ${r.ga}</b></span>`).join("") || "<p>Your story starts at the first whistle.</p>"}</div>`;
     }
     if (this.tab === "squad") {
       body = `<div class="sectionHeading"><div><span class="eyebrow">${SHOP_CARDS.filter((c) => d.owned.includes(c.id)).length} / ${SHOP_CARDS.length} GUIDE PLAYERS</span><h2>YOUR STARTING FIVE</h2><p>Cards change your players and grant small pace, shot and pass boosts.</p></div>${button("pack", `OPEN PACK · ${d.packs} AVAILABLE`, !d.packs)}</div>${this.reveal.length ? `<div class="packReveal"><h3>WELCOME TO THE CLUB</h3><div class="cardGrid">${this.reveal.map((c) => this.card(c, true, c.duplicate)).join("")}</div></div>` : ""}<div class="squadSlots">${d.squad
@@ -264,6 +274,7 @@ export class Club {
     this.el.innerHTML = `<header class="clubHeader"><b>PENALTY <small>WORLD / 02</small></b><div><span>LEVEL ${level(d.xp)}</span><strong>${d.coins} <small>COINS</small></strong><span>${d.packs} PACKS</span></div></header><nav class="clubTabs" aria-label="Club sections">${[
       ["play", "HOME"],
       ["world", "WORLD LEAGUES"],
+      ["cups", "CUPS"],
       ["career", "CLUB CAREER"],
       ["player", "PLAYER CAREER"],
       ["squad", "SQUAD & CARDS"],

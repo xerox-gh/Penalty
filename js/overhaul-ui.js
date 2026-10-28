@@ -65,7 +65,7 @@ export function homeMenu(club) {
        `<article><span>${n} /</span><h2>${title}</h2><p>${desc}</p>${btn("tab:" + id, "OPEN →")}</article>`,
    )
    .join("")}</div>
- <div class="hubSection"><h2>CUPS & CHALLENGES</h2>${btn("start:cup", "KNOCKOUT CUP →", locked)}</div><div class="heroActions">${btn("challenge:comeback", "COMEBACK CHALLENGE", locked)}${btn("challenge:clean", "CLEAN SHEET", locked)}${btn("challenge:three", "THREE-GOAL RUSH", locked)}${btn("tab:quests", "QUEST BOARD →")}</div>`;
+ <div class="hubSection"><h2>CUPS & CHALLENGES</h2>${btn("tab:cups", "INTERNATIONAL & CLUB CUPS →")}${btn("start:cup", "KNOCKOUT CUP →", locked)}</div><div class="heroActions">${btn("challenge:comeback", "COMEBACK CHALLENGE", locked)}${btn("challenge:clean", "CLEAN SHEET", locked)}${btn("challenge:three", "THREE-GOAL RUSH", locked)}${btn("tab:quests", "QUEST BOARD →")}</div>`;
 }
 export function worldMenu(club) {
   const c = club.save.data.worldCareer,

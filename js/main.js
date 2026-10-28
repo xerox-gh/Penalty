@@ -1,3 +1,4 @@
+import { teamInfo, teamRoster } from './competitions.js';
 import { worldClub, worldRoster } from "./world.js";
 import { STADIUMS } from "./venues.js";
 import { SetPieceUI } from "./set-piece-ui.js";
@@ -169,7 +170,7 @@ class Game {
           });
           p.kit.dispose();
         }
-    const roster = this.match?.worldHome!=null ? worldRoster(this.match.worldHome) : this.club.save.data.squad.map(id => CARDS.find(c => c.id === id));
+    const roster = this.match?.homeRef ? teamRoster(this.match.homeRef) : this.match?.worldHome!=null ? worldRoster(this.match.worldHome) : this.club.save.data.squad.map(id => CARDS.find(c => c.id === id));
     const pro = this.match?.kind === "player" ? this.club.save.data.playerCareer?.profile : null;
     if (pro) roster[proSlot(pro)] = proCard(pro);
     this.teams = [
@@ -180,7 +181,7 @@ class Game {
         this.options.formation,
         roster,
       ),
-      new Team(this.scene, 1, this.options.awayColor, this.options.formation, this.match?.worldAway!=null?worldRoster(this.match.worldAway):[]),
+      new Team(this.scene, 1, this.options.awayColor, this.options.formation, this.match?.awayRef?teamRoster(this.match.awayRef):this.match?.worldAway!=null?worldRoster(this.match.worldAway):[]),
     ];
     this.teams[0].lockedPlayer = pro ? proSlot(pro) : null;
     if (pro) this.teams[0].active = proSlot(pro);
@@ -249,17 +250,18 @@ class Game {
     this.options.away = this.options.away.trim() || "AWAY";
     this.options.duration = +$("duration").value;
     for (const k of ["golden", "local", "auto"]) this.options[k] = $(k).checked;
-    if (this.match.kind !== "quick") {
+    this.options.aiAssist=!!this.match.aiAssist;
+    if (this.match.kind !== "quick" || this.match.worldHome!=null) {
       const d = this.club.save.data,
-        rival = this.match.worldAway!=null ? worldClub(this.match.worldAway) : CLUBS[this.match.opponent];
+        rival = this.match.awayRef ? teamInfo(this.match.awayRef) : this.match.worldAway!=null ? worldClub(this.match.worldAway) : CLUBS[this.match.opponent];
       Object.assign(this.options, {
-        home: this.match.worldHome!=null?worldClub(this.match.worldHome).name:d.clubName,
+        home: this.match.homeRef ? teamInfo(this.match.homeRef).name : this.match.worldHome!=null?worldClub(this.match.worldHome).name:d.clubName,
         away: rival.name,
-        homeColor: this.match.worldHome!=null?worldClub(this.match.worldHome).color:KITS.find((k) => k.id === d.kit).color,
+        homeColor: this.match.homeRef ? teamInfo(this.match.homeRef).color : this.match.worldHome!=null?worldClub(this.match.worldHome).color:KITS.find((k) => k.id === d.kit).color,
         awayColor: rival.color,
         duration: 120,
         local: false,
-        golden: this.match.kind === "cup",
+        golden: ["cup","tournament"].includes(this.match.kind),
         difficulty:
           this.match.kind === "career"
             ? ["Hard", "Medium", "Easy"][d.career.division - 1]
@@ -272,7 +274,11 @@ class Game {
           (c) => c.id === this.match.challenge,
         ).duration;
     }
+    if(this.match.kind==='quick'){
+      this.options.duration=+$("duration").value;this.options.local=$("local").checked;this.options.golden=$("golden").checked;this.options.difficulty=$("difficulty").value;
+    }
     this.applyVenue();
+    this.assistManual=0;
     this.matchStats = { passes: 0, shots: 0 };
     this.passIntent = null;
     $("rewards").textContent = "";
@@ -400,6 +406,10 @@ class Game {
         team.active = near.index;
     }
   }
+  manualControl(team) {
+    if(team.id===1)return this.options.local;
+    return !this.options.aiAssist || (this.assistManual||0)>0;
+  }
   step(dt) {
     this.time += dt;
     const s = this.state.name;
@@ -437,6 +447,12 @@ class Game {
       return;
     }
     if (s === "setpiece") { this.rules.updateRestart(dt); return; }
+    if(this.options.aiAssist){
+      const c=this.input.controls(false,this.options.local);
+      const used=Math.hypot(c.x,c.z)>.15||c.shoot||c.passEdge||c.lobEdge||c.throughEdge||c.tackleEdge||c.switchEdge||c.sprint||c.precision;
+      this.assistManual=used?1.25:Math.max(0,(this.assistManual||0)-dt);
+      if(this.teams[0].players[this.teams[0].active].charge>0)this.assistManual=Math.max(this.assistManual,.1);
+    }
     this.aiTime -= dt;
     if (this.aiTime <= 0) {
       this.aiTime = 1 / CFG.match.aiHz;
@@ -446,13 +462,13 @@ class Game {
           this.teams[1 - team.id],
           this.ball,
           this.options.difficulty,
-          team.id === 0 || this.options.local
+          this.manualControl(team)
             ? team.players[team.active]
             : null,
         );
     }
     for (const team of this.teams) {
-      const human = team.id === 0 || this.options.local;
+      const human = this.manualControl(team);
       const controlledIndex = human ? team.active : -1;
       if (human) this.human(team, dt, team.id === 1);
       for (const p of team.players) {

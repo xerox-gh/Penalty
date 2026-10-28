@@ -1,5 +1,5 @@
 // Bump the version whenever shipping changed files; cache URLs stay inside the repo scope.
-const CACHE = "penalty-v13";
+const CACHE = "penalty-v14";
 const FILES = [
   "./",
   "./index.html",
@@ -7,6 +7,8 @@ const FILES = [
   "./manifest.webmanifest",
   "./libs/three.module.js",
   "./js/main.js",
+  "./js/competitions.js",
+  "./js/competition-ui.js",
   "./js/save-health.js",
   "./js/animation.js",
   "./js/venues.js",
