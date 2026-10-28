@@ -1,3 +1,4 @@
+import { PlayerAnimator } from "./animation.js";
 import {nationalityFor} from "./nationality.js";
 import { appearanceFor } from "./appearance.js";
 import { buildHead, skins } from "./player-head.js";
@@ -35,6 +36,8 @@ export class Player {
     this.nationality = nationalityFor(card || {id:names[team][index]});
     this.paceBoost = 1 + ((card?.pace ?? 65) - 65) * 0.0015;
     this.shotBoost = 1 + ((card?.shoot ?? 65) - 65) * 0.002;
+    this.strength = card?.strength ?? 65;
+    this.dribble = card?.dribble ?? 65;
     this.passBoost = 1 + ((card?.pass ?? 65) - 65) * 0.001;
     Object.assign(this, {
       team,
@@ -81,6 +84,7 @@ export class Player {
     const head = buildHead(this.appearance);
     head.position.set(0, 1.67, 0.01);
     this.root.add(head);
+    this.head = head;
     const detail = (parent, mat, x, y, z, sx, sy, sz) => {
       const m = add(parent, geometry.detail, mat, x, y, z);
       m.scale.set(sx, sy, sz);
@@ -159,6 +163,9 @@ export class Player {
       -0.232,
     );
     number.rotation.y = Math.PI;
+    this.body = new T.Group();this.body.position.y=.84;
+    for(const child of [...this.root.children]){child.position.y-=.84;this.body.add(child);}
+    this.root.add(this.body);this.animator=new PlayerAnimator(index+team*5);this.header=0;
     scene.add(this.root);
   }
   move(x, z, sprint, dt, mult = 1) {
@@ -201,52 +208,12 @@ export class Player {
       0,
       1,
     );
+    this.header = Math.max(0,(this.header||0)-dt);
     this.kick = Math.max(0, this.kick - dt);
     this.cooldown = Math.max(0, this.cooldown - dt);
     this.slide = Math.max(0, this.slide - dt);
     this.dive = Math.max(0, this.dive - dt);
   }
 
-  render(t, dt = 1 / 60) {
-    const speed = Math.hypot(this.vx, this.vz),
-      run = Math.min(1, speed / 6),
-      phase = t * (this.sprinting ? 16 : 12),
-      angle = Math.atan2(this.dx, this.dz);
-    const delta = Math.atan2(
-      Math.sin(angle - this.root.rotation.y),
-      Math.cos(angle - this.root.rotation.y),
-    );
-    this.root.rotation.y += delta * (1 - Math.exp(-dt * 14));
-    this.root.position.set(
-      this.x,
-      Math.abs(Math.sin(phase)) * run * 0.045,
-      this.z,
-    );
-    this.root.rotation.x = this.slide > 0 ? -1.1 : run * 0.075;
-    this.root.rotation.z = this.dive > 0 ? 1.1 : 0;
-    if (this.slide > 0) this.root.position.y = 0.12;
-    if (this.dive > 0) this.root.position.y = 0.22;
-    for (let i = 0; i < 2; i++) {
-      const cycle = phase + i * Math.PI;
-      this.legs[i].rotation.x = Math.sin(cycle) * run * 0.72;
-      this.knees[i].rotation.x = Math.max(0, -Math.sin(cycle)) * run * 1.05;
-      this.arms[i].rotation.x = -Math.sin(cycle) * run * 0.6;
-      this.arms[i].rotation.z = i ? -0.12 : 0.12;
-      this.elbows[i].rotation.x = -0.35 - run * 0.5;
-    }
-    if (this.kick > 0) {
-      this.legs[1].rotation.x = -1.05;
-      this.knees[1].rotation.x = 0.15;
-      this.arms[0].rotation.z = 0.5;
-    }
-    if (this.slide > 0) {
-      this.legs[0].rotation.x = -0.8;
-      this.knees[1].rotation.x = 1.2;
-    }
-    if (this.celebrate) {
-      this.root.position.y = Math.abs(Math.sin(t * 6)) * 0.28;
-      this.arms[0].rotation.z = 2.6;
-      this.arms[1].rotation.z = -2.6;
-    }
-  }
+  render(t, dt = 1 / 60) { this.animator.update(this,t,dt); }
 }

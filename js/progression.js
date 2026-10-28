@@ -1,3 +1,7 @@
+import { worldClub, newWorldCareer, validateWorld, worldFixture, recordWorld, nextWorldSeason, standings } from "./world.js";
+import { venueSettings } from "./venues.js";
+import { extendedStats } from "./card-stats.js";
+import { inspectSave, MAX_COUNTER } from "./save-health.js";
 import { validatePro, newPlayerCareer, validatePlayerCareer, CAREER_STATS } from "./player-career.js";
 import {nationalityFor} from "./nationality.js";
 import { GUIDE } from "./shop-guide.js";
@@ -118,7 +122,7 @@ const legacy = previousCards
   .filter((c) => !SHOP_CARDS.some((p) => p.id === c.id))
   .map((c) => ({ ...c, legacy: true }));
 CARDS.splice(0, CARDS.length, ...SHOP_CARDS, ...legacy);
-for(const card of CARDS) card.nationality=nationalityFor(card).code;
+for(const card of CARDS) { card.nationality=nationalityFor(card).code; Object.assign(card,extendedStats(card)); }
 export const PACKS = GUIDE.packs;
 export function drawShopCard(pack, random) {
   let roll = random() * 100,
@@ -386,8 +390,10 @@ export function freshSave() {
       base: Object.fromEntries(statsKeys.map((k) => [k, 0])),
       claimed: [],
     },
+    presentation: venueSettings(),
     career: newCareer(),
     playerCareer: null,
+    worldCareer: null,
     cup: { round: 0, attempt: 1, status: "ready" },
     challenges: [],
     trophies: [],
@@ -526,13 +532,17 @@ export function validateSave(source) {
       d.trophies.every((t) => typeof t === "string" && t.length <= 80),
     "Invalid trophies.",
   );
+  d.worldCareer = validateWorld(d.worldCareer);
+  d.presentation = venueSettings(d.presentation);
   d.playerCareer = validatePlayerCareer(d.playerCareer);
   if (d.pending) {
     const p = d.pending;
+    if (["world","exhibition"].includes(p.kind)) need(worldClub(p.worldHome)&&worldClub(p.worldAway)&&p.worldHome!==p.worldAway,"Invalid world clubs.");
+    if(p.kind==="world")need(d.worldCareer && p.worldHome===d.worldCareer.club && p.round===d.worldCareer.round && p.season===d.worldCareer.season && worldFixture(d.worldCareer)?.includes(p.worldAway),"Invalid world fixture.");
     need(
       validInt(p.id) &&
         p.id <= d.serial &&
-        ["quick", "career", "cup", "challenge", "player"].includes(p.kind) &&
+        ["quick", "career", "cup", "challenge", "player", "world", "exhibition"].includes(p.kind) &&
         validInt(p.opponent, 7),
       "Invalid pending match.",
     );
@@ -557,7 +567,25 @@ export class Progression {
     this.corrupt = null;
     try {
       const raw = storage?.getItem(SAVE_KEY);
-      this.data = raw ? validateSave(JSON.parse(raw)) : freshSave();
+      if (!raw) this.data = freshSave();
+      else {
+        const report=inspectSave(raw,validateSave);
+        if(report.data){
+          this.data=report.data;
+          if(report.repairs.length){
+            this.recoveryRaw=raw;
+            this.message="Save repaired automatically: "+report.repairs.join("; ")+". Original recovery copy retained.";
+            try {storage.setItem(SAVE_KEY+".recovery",raw);storage.setItem(SAVE_KEY,JSON.stringify(this.data));} catch {this.message="Save repaired in this tab only: device saving failed. Export your save and original recovery before closing.";}
+          }
+        } else {
+          const backup=storage?.getItem(SAVE_KEY+".backup");
+          const recovered=backup && inspectSave(backup,validateSave);
+          if(!recovered?.data)throw Error(report.error);
+          this.data=recovered.data;this.recoveryRaw=raw;
+          this.message="Damaged save recovered from the last verified backup. Original retained; the newest changes may be missing.";
+          try {storage.setItem(SAVE_KEY+".recovery",raw);storage.setItem(SAVE_KEY,JSON.stringify(this.data));} catch {this.message="Backup recovered in this tab only: device saving failed. Export before closing. The newest changes may be missing.";}
+        }
+      }
       if (!storage)
         this.message =
           "Device storage is unavailable. Export a backup before closing.";
@@ -578,18 +606,49 @@ export class Progression {
       if (!this.corrupt) this.storage = null;
     }
   }
+  checkSave() {
+    const report=inspectSave(this.corrupt || this.data,validateSave);
+    this.health=report.error || (report.repairs.length?report.repairs.join("; "):"Healthy: counters, cards, careers and pending fixtures validated.");
+    return report;
+  }
+  repairSave() {
+    const raw=this.corrupt || JSON.stringify(this.data), report=inspectSave(raw,validateSave);
+    need(report.data,report.error || "Cannot repair this save.");
+    this.recoveryRaw=raw;
+    try {this.storage?.setItem(SAVE_KEY+".recovery",raw);} catch {}
+    this.corrupt=null;this.save(report.data);
+    this.health=report.repairs.length?report.repairs.join("; "):"Save verified; no repair needed.";
+    return this.health;
+  }
+  restoreBackup() {
+    const raw=this.storage?.getItem(SAVE_KEY+".backup");
+    need(raw,"No verified backup is available yet.");
+    const report=inspectSave(raw,validateSave);need(report.data,"The backup is not valid.");
+    const previous=this.corrupt || JSON.stringify(this.data);
+    this.recoveryRaw=previous;
+    try {this.storage?.setItem(SAVE_KEY+".recovery",previous);} catch {}
+    this.corrupt=null;this.save(report.data);
+    this.health="Restored the previous verified save. Newer progress may be missing.";
+  }
   save(data) {
-    need(!this.corrupt, "Import a valid backup to recover your save first.");
-    data.revision = (this.data.revision || 0) + 1;
+    need(!this.corrupt, "Use Save Health to recover your save first.");
+    const reward=data.lastReward;
+    data.revision = Math.min(MAX_COUNTER,(this.data.revision || 0) + 1);
+    const checked=inspectSave(data,validateSave);
+    need(checked.data,"Save blocked to protect your progress: "+checked.error);
+    data=checked.data;data.lastReward=reward;
     try {
       if (!this.storage) throw new Error("unavailable");
-      this.storage.setItem(SAVE_KEY, JSON.stringify(data));
-      this.message = "Saved on this device.";
+      const old=this.storage.getItem(SAVE_KEY);
+      if(old && inspectSave(old,validateSave).data)this.storage.setItem(SAVE_KEY+".backup",old);
+      const encoded=JSON.stringify(data);
+      this.storage.setItem(SAVE_KEY,encoded);
+      if(this.storage.getItem(SAVE_KEY)!==encoded)throw Error("write verification failed");
+      this.message=checked.repairs.length?"Saved; invalid counters were repaired safely.":"Saved and verified on this device.";
     } catch {
-      this.message =
-        "Progress is only in this tab: device saving failed. Export a backup before closing.";
+      this.message="Progress is only in this tab: device saving failed. Export a backup before closing.";
     }
-    this.data = data;
+    this.data=data;
   }
   change(fn) {
     const d = clone(this.data);
@@ -757,15 +816,22 @@ export class Progression {
       Object.assign(d.playerCareer, {season:d.playerCareer.season+1,round:0,points:0,history:[]});
     });
   }
+  startWorld(club) { this.change(d=>{need(!d.pending,"Finish or abandon the pending match first.");need(!d.worldCareer,"A World League career already exists. Continue it or use Exhibition to try other clubs.");d.worldCareer=newWorldCareer(Number(club));}); }
+  nextWorld() { this.change(d=>{need(!d.pending && d.worldCareer,"Finish the pending match first.");nextWorldSeason(d.worldCareer);}); }
   begin(kind, challenge) {
     return this.change((d) => {
       need(!d.pending, "Resume or abandon your pending match first.");
       need(
-        ["quick", "career", "cup", "challenge", "player"].includes(kind),
+        ["quick", "career", "cup", "challenge", "player", "world", "exhibition"].includes(kind),
         "Unknown mode.",
       );
       let opponent = 1;
       const p = { id: ++d.serial, kind, opponent };
+      if (kind === "world") {
+        const c=d.worldCareer, fixture=c&&worldFixture(c);need(fixture,"Create a World League career or start the next season first.");
+        Object.assign(p,{worldHome:c.club,worldAway:fixture.find(id=>id!==c.club),round:c.round,season:c.season});
+      }
+      if (kind === "exhibition") {need(worldClub(challenge?.home)&&worldClub(challenge?.away)&&challenge.home!==challenge.away,"Choose two different clubs.");Object.assign(p,{worldHome:challenge.home,worldAway:challenge.away});}
       if (kind === "player") {
         const c = d.playerCareer;
         need(c && c.round < 10, "Create your player or start the next season first.");
@@ -837,6 +903,10 @@ export class Progression {
       const trophy = (t) => {
         if (d.trophies.length < 100) d.trophies.push(t);
       };
+      if(p.kind === "world") {
+        const c=d.worldCareer;need(c && c.round===p.round && c.season===p.season,"Fixture already processed.");recordWorld(c,result.gf,result.ga);
+        if(!worldFixture(c)){const rank=standings(c.table).findIndex(t=>t.id===c.club)+1;notes.push(`World League season complete: position ${rank}.`);if(rank===1){coins+=500;packs+=2;trophy(`World League Champion · Season ${c.season}`);}}
+      }
       if (p.kind === "player") {
         const c = d.playerCareer;
         need(c && c.round === p.round && c.season === p.season, "This player fixture was already processed.");
@@ -957,9 +1027,12 @@ export class Progression {
       typeof text === "string" && text.length <= 200000,
       "Save file is too large.",
     );
-    const d = validateSave(JSON.parse(text));
+    const report = inspectSave(text,validateSave);
+    need(report.data, report.error || "Invalid save.");
+    if(report.repairs.length){this.recoveryRaw=text;try{this.storage?.setItem(SAVE_KEY+".recovery",text);}catch{}}
     this.corrupt = null;
-    this.save(d);
+    this.save(report.data);
+    if(report.repairs.length)this.message="Imported and repaired counters. Original recovery copy retained.";
     return true;
   }
 }

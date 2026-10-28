@@ -1,3 +1,7 @@
+import { homeMenu, worldMenu, settingsMenu, healthMenu } from "./overhaul-ui.js";
+import { WORLD_LEAGUES, worldClub } from "./world.js";
+import { STADIUMS, PITCH_COLORS } from "./venues.js";
+import { CARD_STATS, extendedStats } from "./card-stats.js";
 import { renderPlayerCareer, readProForm } from "./player-career-ui.js";
 import { proCard } from "./player-career.js";
 import { PackOpening } from "./pack-opening.js";
@@ -60,6 +64,9 @@ export class Club {
     });
     this.el.addEventListener("change", (e) => {
       if (e.target.closest("#proForm")) return;
+      if(e.target.id==="worldLeague"){this.worldLeague=Number(e.target.value);this.worldHome=this.worldAway=null;this.render();return;}
+      if(e.target.id==="worldHome"){this.worldHome=Number(e.target.value);return;}
+      if(e.target.id==="worldAway"){this.worldAway=Number(e.target.value);return;}
       try {
         if (e.target.dataset.slot !== undefined)
           this.save.equip(+e.target.dataset.slot, e.target.value);
@@ -98,6 +105,26 @@ export class Club {
       if (verb === "tab") {
         this.tab = id;
         this.reveal = [];
+      } else if (verb === "world-create") {
+        this.save.startWorld(Number(this.el.querySelector('#worldHome').value));this.message="World League career created.";
+      } else if (verb === "world-exhibition") {
+        this.game.startMode("exhibition",{home:Number(this.el.querySelector('#worldHome').value),away:Number(this.el.querySelector('#worldAway').value)});return;
+      } else if (verb === "world-next") {this.save.nextWorld();this.message="New season: divisions updated.";
+      } else if (verb === "world-sim") {
+        const p=this.save.begin('world'),c=this.save.data.worldCareer;
+        const seed=c.season*17+c.round*7+c.club;
+        this.save.complete(p.id,{gf:(seed+worldClub(c.club).rating)%4,ga:(seed*3+worldClub(p.worldAway).rating)%4,passes:0,shots:0});this.message="Fixture simulated and saved.";
+      } else if (verb === "venue" || verb === "turf") {
+        if(this.save.data.pending)throw Error("Finish the pending match first.");
+        if(!(verb==='venue'?STADIUMS:PITCH_COLORS).some(v=>v.id===id))throw Error('Unknown setting.');
+        this.save.change(d=>d.presentation[verb==='venue'?'stadium':'pitchColor']=id);this.game.applyVenue();this.message="Matchday settings saved.";
+      } else if (verb === "save-check") {this.save.checkSave();this.message=this.save.health;
+      } else if (verb === "save-repair") {this.message=this.save.repairSave();
+      } else if (verb === "save-backup") {this.save.restoreBackup();this.message=this.save.health;
+      } else if (verb === "save-recovery") {
+        const raw=this.save.recoveryRaw||this.save.corrupt||this.save.storage?.getItem('penalty.club.v1.recovery');
+        if(!raw)throw Error('No damaged original has been retained. Your save may already be healthy.');
+        const url=URL.createObjectURL(new Blob([raw],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='penalty-original-recovery.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
       } else if (verb === "quick") {
         if (this.save.data.pending)
           throw Error("Resume or abandon the unfinished match first.");
@@ -168,7 +195,7 @@ export class Club {
       <div class="cardTop"><b>${c.rating}</b><span>${c.position}</span></div><div class="cardEdition">${c.rarity}</div>
       <div class="cardPortrait">${portraitSVG(look,c.position==='GK'?'#e9bf43':KITS.find(k=>k.id===this.save.data.kit).color)}</div>
       <span class="cardEmblem" aria-hidden="true">P</span><div class="cardData"><h3>${esc(c.name)}</h3>
-      <div class="cardStats"><span><small>PAC</small><b>${c.pace}</b></span><span><small>SHO</small><b>${c.shoot}</b></span><span><small>PAS</small><b>${c.pass}</b></span></div>
+      <div class="cardStats">${CARD_STATS.map(([key,label])=>`<span><small>${label}</small><b>${c[key]??extendedStats(c)[key]}</b></span>`).join('')}</div>
       <div class="cardNation" title="${nation.name}">${flagSVG(nation)}<span>${nation.code}</span><span class="clubCrest" aria-hidden="true">P/</span></div></div></div></div>
       <small class="cardStatus">${status}</small>${actions && !c.custom && owned && !duplicate && !this.save.data.squad.includes(c.id) ? button('sell:'+c.id,`QUICK SELL · ${QUICK_SELL[c.rarity]}`,!!this.save.data.pending):''}</article>`;
   }
@@ -183,9 +210,10 @@ export class Club {
       c = d.career,
       locked = !!d.pending;
     let body = "";
-    if (this.tab === "play") {
-      body = `<div class="clubIntro"><div><span class="eyebrow">YOUR CLUB. YOUR STORY.</span><h1>MAKE IT<br>COUNT.</h1><p>Build a squad. Chase silverware. Every match matters.</p></div><label>CLUB NAME<input id="clubName" maxlength="18" value="${esc(d.clubName)}" ${locked ? "disabled" : ""}></label></div><div class="modeCards"><article><small>YOUR OWN STAR</small><h2>PLAYER CAREER</h2><p>Create your player, choose stats and card rarity, then play ten-match seasons.</p>${button("tab:player", "CREATE YOUR LEGACY →")}</article><article><small>THE LONG GAME</small><h2>CLUB CAREER</h2><p>Division ${c.division} · Season ${c.season}<br>10 fixtures. Top two earn promotion.</p>${button("tab:career", "VIEW SEASON →")}</article><article><small>THREE WINS FROM GLORY</small><h2>KNOCKOUT CUP</h2><p>${["Quarter-final", "Semi-final", "Final", "Champions"][d.cup.round]} · ${d.cup.status === "out" ? "Eliminated. Start a new run." : d.cup.status === "won" ? "Trophy secured. Defend it." : "Golden goal settles every tie."}</p>${button("start:cup", "ENTER CUP →", locked)}</article><article><small>STRAIGHT TO THE PITCH</small><h2>KICK OFF</h2><p>Custom matches, arena rules<br>and local two-player.</p>${button("quick", "MATCH SETUP →", locked)}</article></div><h2>MATCHDAY CHALLENGES</h2><div class="questGrid">${CHALLENGES.map((x) => `<article class="quest"><small>${d.challenges.includes(x.id) ? "COMPLETED ✓" : "FIRST WIN: 100 COINS + 1 PACK"}</small><h3>${x.name}</h3><p>${x.description}</p>${button("challenge:" + x.id, "TAKE THE CHALLENGE", locked)}</article>`).join("")}</div>`;
-    }
+    if (this.tab === "play") body=homeMenu(this);
+    if (this.tab === "world") body=worldMenu(this);
+    if (this.tab === "settings") body=settingsMenu(this);
+    if (this.tab === "health") body=healthMenu(this);
     if (this.tab === "player") body = renderPlayerCareer(this, CLUBS);
     if (this.tab === "career") {
       const fixture =
@@ -233,14 +261,17 @@ export class Club {
       body = `<span class="eyebrow">CONTRACT BOARD ${d.contracts.number}</span><h2>GIVE EVERY MATCH A PURPOSE</h2><p>Claim all three contracts to refresh the board. No timers. No daily login.</p><div class="questGrid">${CONTRACTS.map((q) => this.quest(q, true)).join("")}</div><h2>CLUB MILESTONES</h2><div class="questGrid">${QUESTS.map((q) => this.quest(q)).join("")}</div>`;
     if (this.tab === "club")
       body = `<h2>THE KIT ROOM</h2><div class="questGrid">${KITS.map((k) => `<article class="quest"><div class="kitSwatch" style="--kit:${k.color}">P /</div><h3>${k.name}</h3>${button("kit:" + k.id, d.kit === k.id ? "EQUIPPED" : d.kits.includes(k.id) ? "EQUIP" : `${k.cost} COINS`, locked || d.kit === k.id || (!d.kits.includes(k.id) && d.coins < k.cost))}</article>`).join("")}</div><h2>TROPHY CABINET</h2><div class="resultsList">${[...d.trophies, ...d.challenges.map((id) => "Challenge: " + CHALLENGES.find((c) => c.id === id).name)].map((t) => `<span>★ ${esc(t)}</span>`).join("") || "<p>Your first piece of silverware is waiting.</p>"}</div><h2>CLUB RECORD</h2><p>${d.stats.matches} matches · ${d.stats.wins} wins · ${d.stats.goals} goals · ${d.stats.passes} completed passes</p><h2>YOUR OFFLINE SAVE</h2><p>Progress is stored in this browser on this device. Export a backup to keep it when clearing browser data, moving devices or changing site addresses. Import replaces this device’s club.</p><div class="backupActions">${button("export", "EXPORT BACKUP")}<label class="fileLabel">IMPORT BACKUP<input id="saveFile" type="file" accept="application/json,.json"></label></div>`;
-    this.el.innerHTML = `<header class="clubHeader"><b>P / FOOTBALL</b><div><span>LEVEL ${level(d.xp)}</span><strong>${d.coins} <small>COINS</small></strong><span>${d.packs} PACKS</span></div></header><nav class="clubTabs" aria-label="Club sections">${[
-      ["play", "PLAY"],
+    this.el.innerHTML = `<header class="clubHeader"><b>PENALTY <small>WORLD / 02</small></b><div><span>LEVEL ${level(d.xp)}</span><strong>${d.coins} <small>COINS</small></strong><span>${d.packs} PACKS</span></div></header><nav class="clubTabs" aria-label="Club sections">${[
+      ["play", "HOME"],
+      ["world", "WORLD LEAGUES"],
       ["career", "CLUB CAREER"],
       ["player", "PLAYER CAREER"],
       ["squad", "SQUAD & CARDS"],
       ["shop", "PACK SHOP"],
       ["quests", "QUESTS"],
       ["club", "MY CLUB"],
+      ["settings", "STADIUMS"],
+      ["health", "SAVE HEALTH"],
     ]
       .map(
         ([id, label]) =>
@@ -248,6 +279,6 @@ export class Club {
       )
       .join(
         "",
-      )}</nav><div class="xpTrack"><progress value="${d.xp % 300}" max="300"></progress><small>${d.xp % 300}/300 XP · NEXT LEVEL: 1 PACK</small></div><p class="clubStatus" role="status">${esc([this.message, this.save.message || "OFFLINE CLUB · ALL REWARDS EARNED THROUGH PLAY"].filter(Boolean).join(" · "))}</p>${locked ? `<aside class="pendingMatch"><b>Unfinished ${esc(d.pending.kind)} match</b><span>Resume restarts this fixture from kickoff.</span>${button("resume", "RESUME")}${button("abandon", "ABANDON · NO REWARD")}</aside>` : ""}<div class="clubBody">${body}</div>`;
+      )}</nav><div class="xpTrack"><progress value="${d.xp % 300}" max="300"></progress><small>${d.xp % 300}/300 XP · NEXT LEVEL: 1 PACK</small></div><p class="clubStatus" role="status">${esc([this.message, this.save.message || "OFFLINE CLUB · ALL REWARDS EARNED THROUGH PLAY"].filter(Boolean).join(" · "))}</p>${this.save.corrupt?`<aside class="pendingMatch"><b>Save recovery required</b>${button("tab:health","OPEN SAVE HEALTH")}</aside>`:""}${locked ? `<aside class="pendingMatch"><b>Unfinished ${esc(d.pending.kind)} match</b><span>Resume restarts this fixture from kickoff.</span>${button("resume", "RESUME")}${button("abandon", "ABANDON · NO REWARD")}</aside>` : ""}<div class="clubBody">${body}</div>`;
   }
 }

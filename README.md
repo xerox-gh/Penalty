@@ -2,6 +2,19 @@
 
 A static, procedural 3D arcade soccer game: 4 outfield players and a goalkeeper per team. No build, backend, accounts, asset downloads, or runtime CDN dependency. Three.js 0.170.0 is vendored in `libs/`, with its MIT license.
 
+## World / 02 overhaul
+
+- **Save Health:** every write is validated and read back. Invalid numeric counters are repaired within safe limits (maximum 100 million); the damaged original is retained for recovery export. A previous verified save is kept locally. Structural damage falls back to that backup when available, otherwise progression stays protected until a valid import. The Save Health tab offers Check, Repair, Restore Previous, and export/import. Repair cannot reconstruct lost cards or careers. Storage failures are reported; export before closing a session that cannot save.
+- **Animation:** a new procedural controller blends distance-driven jogging/sprinting, closer dribbling steps, turning lean, bent elbows/knees, kick backswing/follow-through, slide recovery, headers, goalkeeper dives and celebrations. Players have independent gait phases. These remain stylized rigid-part animations, not motion capture.
+- **Stadium Studio:** Grand Arena, Metro After Dark (skyline), Coastal Park (sea and palms), and Community Ground (clubhouse and trees). Choose classic, emerald, mint, ocean blue, violet, terracotta or ivory turf. Settings persist and apply to every mode; finish/abandon a pending match before changing them.
+- **Top Corner integration:** the country/name pools and fictional club naming conventions from [xerox-gh/Top-Corner](https://github.com/xerox-gh/Top-Corner) are adapted in `js/world-data.js` and `js/world.js`. The redesigned hub leads to 38 countries, 76 divisions and 1,256 clubs, exhibitions and a separate offline World League career. Play or simulate 30/38 home-and-away fixtures, view standings/results, then advance a season with three-club promotion/relegation between paired divisions. Your club identity persists across promotion. This ports leagues and menu ideas into Penalty's 5v5 engine; it does not merge Top Corner's 11v11 engine, editor or transfers. World clubs use their own generated five-player rosters; existing collectible-squad and player careers remain separate.
+- **Five card stats:** PAC, SHO, PAS, **STR**, **DRI** appear on cards and in the player creator/training system. STR influences shielding and contact displacement; DRI affects close touches and first-touch reach. Existing collectible OVRs stay fixed. Older custom players receive STR/DRI defaults based on their previous stats, preserving their overall rating and career progress.
+- **51 nationalities:** expanded country choices include USA, Croatia, Brazil, Spain, Portugal, Mexico, Canada and more. Flags are generated as offline SVGs; some emblems are simplified. Existing assigned identities remain stable.
+
+Save safety constants are in `js/save-health.js`; attribute derivation in `js/card-stats.js`; venue/turf palettes in `js/venues.js`; gait/action timing in `js/animation.js`; world fixtures and season movement in `js/world.js`. World Career currently keeps one selected club per save and the current season's results. Keep an exported backup if you want to experiment with another save.
+
+Validation for this update: all nine Node test suites pass, including full promotion/relegation seasons, legacy stat migration, bad counters, structural corruption, backup recovery and write protection. Headless Chromium checks passed under `/Penalty/` for a playable ten-player world fixture, result settlement/simulation, all four venue selections, turf persistence, Save Health repair, a 390px mobile layout, and offline reload with no console errors. Real-device performance and Safari/Firefox/Edge testing remain outstanding.
+
 ## Play locally
 
 From the repository root:
@@ -52,7 +65,7 @@ Players now have varied hair styles/colors, faces, ears, collars, cuffs, crests,
 
 Everything runs locally, including fixtures, card draws and rewards. No real-money purchases, accounts, server, calendar timers or network checks. Your browser stores progress in `localStorage`. **Export a backup before clearing browser data or moving to another device/address.** Import replaces the current club; malformed saves are rejected. If browser storage fails, the hub says progress is session-only and still allows export. Unreadable existing saves are preserved for recovery rather than overwritten.
 
-Leaving a match or reloading keeps the pending fixture. Resume restarts it from kickoff; abandon earns nothing. Results and quest rewards are applied only once. This is a compact club career, without transfers, player aging, individual player careers or a full management simulation. Quick Match still provides custom settings and local two-player play.
+Leaving a match or reloading keeps the pending fixture. Resume restarts it from kickoff; abandon earns nothing. Results and quest rewards are applied only once. This is a compact club career, without transfers, player aging or a full management simulation; a separate Player Career is available. Quick Match still provides custom settings and local two-player play.
 
 Tune the catalog, rewards, challenges and fixtures in `js/progression.js`; `js/club.js` contains the hub. Card attribute multipliers are in `js/player.js`. The save schema is versioned; changing it requires a migration or a new save key.
 
@@ -113,7 +126,7 @@ All 112 guide players and retained legacy players have stable fictional national
 
 ## Collectible card presentation
 
-Cards use reference-inspired shield silhouettes, metallic bronze/silver/gold base finishes, and foil special-tier frames. Ratings and positions sit in the upper corner, the player portrait fills the center, and the lower panel holds the full name, the three existing PAC/SHO/PAS attributes, country flag/code and an original club crest. Icon portraits use a monochrome treatment. Every rarity has its own palette. Collection ownership and quick-sell controls sit below the shield.
+Cards use reference-inspired shield silhouettes, metallic bronze/silver/gold base finishes, and foil special-tier frames. Ratings and positions sit in the upper corner, the player portrait fills the center, and the lower panel holds the full name, five PAC/SHO/PAS/STR/DRI attributes, country flag/code and an original club crest. Icon portraits use a monochrome treatment. Every rarity has its own palette. Collection ownership and quick-sell controls sit below the shield.
 
 The same card renderer is used in the collection, individual pack reveals and pack summaries. Two-column mobile layouts keep names and flags legible. This is a CSS/SVG presentation change: card ratings, rewards, pack odds, identities and save data are unchanged.
 
@@ -162,29 +175,11 @@ Run `node tests/progression.mjs` with a current Node.js version. Tests cover all
 
 `node tests/smoke.mjs` checks both goals, kick-ins, corners, goal kicks, board bounce, gravity, shots, keeper catch/distribution, formations, golden goal/full-time and a 180-second simulation with all ten players. JavaScript syntax and HTTP asset paths under `/Penalty/` were also checked. Headless Chromium rendered the game without console errors, accepted movement/shot/pass/camera input, exercised pause/resume, goal/golden-goal/full-time, and reloaded successfully offline after service-worker installation. The richer stadium and articulated players add detail; previous draw-call and triangle counts no longer describe the current scene. The latest update also checks placed shots, pass-and-run, both pitch-rule modes, and mobile portrait touch targets in Chromium emulation. Real-device Chrome/Firefox/Safari/Edge and physical gamepad validation remain outstanding. The headless browser uses software rendering, so neither simulation timing nor these checks establish 60 FPS on real hardware.
 
-## Test checklist
-
-- [ ] Load `/Penalty/` under a repository subpath; all imports and CSS return 200.
-- [ ] No browser console errors or missing assets.
-- [ ] Ten players stay on pitch, keep formation and contest possession.
-- [ ] Move/sprint/pass/charge shot/chip/slide/switch, score into both goals.
-- [ ] Check keeper saves/distribution, kick-ins, goal kicks, corners, free kicks and penalties.
-- [ ] Pause/resume, hide tab, finish match, golden goal, play again.
-- [ ] Test local P2 and a standard-mapping gamepad.
-- [ ] Test mobile joystick/buttons in portrait and landscape.
-- [ ] First online load installs service worker; reload and play offline.
-- [ ] Smoke-test current Chrome, Firefox, Safari and Edge on real devices.
-
-- [ ] Open a pack, equip a card, complete a career fixture and claim a quest.
-- [ ] Reload and verify coins, squad and league progress persist.
-- [ ] Export/import a backup; malformed imports must preserve the existing club.
-- [ ] Resume an unfinished fixture offline and verify it starts at kickoff.
-
 ### Player Career
 
-Open **Player Career** in the club hub (separate from Club Career). Create an outfield player with a name, DEF/MID/FWD position, nationality, hair/face choices, pace, shooting and passing from 1–100, and any card rarity from Rookie to Eternal. The card preview updates as you edit. Overall is the rounded average of the three stats; rarity controls the card artwork independently. Save the player before starting a fixture. Existing collectible players, squad and club-career standings are unaffected.
+Open **Player Career** in the club hub (separate from Club Career). Create an outfield player with a name, DEF/MID/FWD position, nationality, hair/face choices, pace, shooting, passing, strength and dribble from 1–100, and any card rarity from Rookie to Eternal. The card preview updates as you edit. Overall is the rounded average of the five stats; rarity controls the card artwork independently. Save the player before starting a fixture. Existing collectible players, squad and club-career standings are unaffected.
 
-Player-career fixtures last two minutes and lock control to your player, including after passes, goals and restarts. Tab/manual switching and automatic switching are disabled in this mode; teammates and the goalkeeper use AI. The custom player's three attributes use the existing collectible-card gameplay boosts. Goalkeeper careers, transfers and individual goal/assist attribution are not included; the dashboard labels wins and fixture scores as team results.
+Player-career fixtures last two minutes and lock control to your player, including after passes, goals and restarts. Tab/manual switching and automatic switching are disabled in this mode; teammates and the goalkeeper use AI. The custom player's five attributes affect pace, shots, passing, shielding and ball control. Goalkeeper careers, transfers and individual goal/assist attribution are not included; the dashboard labels wins and fixture scores as team results.
 
 Each season has ten fixtures. Earn three points for a win and one for a draw; reaching 18 points earns a title, 400 bonus coins and two packs. Wins award three training points, draws/losses one. Spend a training point for +1 to a chosen stat (maximum 100). You can also edit your creation between matches without resetting career progress. Start the next season after all ten fixtures; appearances, wins, XP, titles and unspent training points carry over. Career progress and the custom player are included in the normal offline save and backup export/import. Older saves migrate with no player career until one is created.
 
@@ -211,3 +206,26 @@ Longer gestures add power. The red power zone increases the chance of shooting o
 Tuning lives in `CFG.setPiece` in `js/config.js`; `js/set-pieces.js` owns restart positioning/ballistics and `js/set-piece-ui.js` owns the pointer aiming panel. The service-worker version is bumped and installation bypasses stale HTTP assets. Reload online to receive the update; existing club/career saves are unchanged.
 
 Validation: `node tests/set-pieces.mjs` checks fouls at both ends, box boundaries, legal tackles, wall distance, penalty exclusion, every restart for both teams, AI/career control, shot height, body blocks, camera-relative aim and full-time penalty extension. Headless Chromium checks mouse penalty strokes, keyboard corner charging, short free kicks, pause/resume, touch drag/cancellation at 390px, AI penalty/keeper selection and offline reload from `/Penalty/`. Physical gamepad and real-device Safari/Firefox validation remain outstanding.
+
+## Test checklist
+
+- [ ] Load `/Penalty/` under a repository subpath; all imports and CSS return 200.
+- [ ] No browser console errors or missing assets.
+- [ ] Ten players stay on pitch, keep formation and contest possession.
+- [ ] Move/sprint/pass/charge shot/chip/slide/switch, score into both goals.
+- [ ] Check keeper saves/distribution, kick-ins, goal kicks, corners, free kicks and penalties.
+- [ ] Pause/resume, hide tab, finish match, golden goal, play again.
+- [ ] Test local P2 and a standard-mapping gamepad.
+- [ ] Test mobile joystick/buttons in portrait and landscape.
+- [ ] First online load installs service worker; reload and play offline.
+- [ ] Smoke-test current Chrome, Firefox, Safari and Edge on real devices.
+
+- [ ] Open a pack, equip a card, complete a career fixture and claim a quest.
+- [ ] Reload and verify coins, squad and league progress persist.
+- [ ] Export/import a backup; malformed imports must preserve the existing club.
+- [ ] Resume an unfinished fixture offline and verify it starts at kickoff.
+
+
+- [ ] Save Health repairs bad counters without losing cards/careers; recovery export retains the original.
+- [ ] World fixture results persist; promotion/relegation retains the selected club.
+- [ ] All four stadiums, seven turf colors and five card stats render on mobile.

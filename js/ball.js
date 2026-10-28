@@ -74,7 +74,7 @@ export class Ball {
         if (
           q.team !== carrier.team &&
           q.slide > 0 &&
-          distance(q, this) < CFG.control.tackleReach &&
+          distance(q, this) < CFG.control.tackleReach - Math.max(0,((carrier.strength??65)-(q.strength??65)))*.005 &&
           q.cooldown <= 0
         ) {
           challenger = q;
@@ -92,15 +92,16 @@ export class Ball {
         carrier.cooldown = 0.35;
         this.audio.play("kick");
       } else if (distance(carrier, this) < 2.7 && this.y < 1.3) {
-        const reach = carrier.precision
+        const control = 1 + ((carrier.dribble ?? 65)-65)*.005;
+        const reach = (carrier.precision
           ? 0.62
           : carrier.sprinting
             ? CFG.control.sprintTouch
-            : CFG.control.closeTouch;
+            : CFG.control.closeTouch) / control;
         const tx = carrier.x + carrier.dx * reach,
           tz = carrier.z + carrier.dz * reach;
-        this.vx = carrier.vx + (tx - this.x) * CFG.control.dribbleSpring;
-        this.vz = carrier.vz + (tz - this.z) * CFG.control.dribbleSpring;
+        this.vx = carrier.vx + (tx - this.x) * CFG.control.dribbleSpring * control;
+        this.vz = carrier.vz + (tz - this.z) * CFG.control.dribbleSpring * control;
         this.x += this.vx * dt;
         this.z += this.vz * dt;
         this.y = CFG.ball.radius;
@@ -146,7 +147,7 @@ export class Ball {
           if(this.y>1.65) {
             const dz=attacking?-p.z: p.z*.2,dx=dir*(attacking?30-p.x*dir:20),len=Math.hypot(dx,dz);
             this.vx=dx/len*(attacking?17:14);this.vz=dz/len*(attacking?17:14);this.vy=attacking?1.5:5;
-            p.kick=.3;this.audio.play("kick");
+            p.kick=.3;p.header=.35;this.audio.play("kick");
           } else {this.vx*=-.45;this.vz*=-.45;this.vy=2;}
           this.owner=null;this.lastTeam=p.team;this.freeTime=.25;p.cooldown=.4;return;
         }
@@ -163,7 +164,7 @@ export class Ball {
       }
       if (
         this.freeTime === 0 &&
-        d < CFG.control.dribbleReach &&
+        d < CFG.control.dribbleReach + ((p.dribble??65)-65)*.003 &&
         d < nearest &&
         Math.hypot(this.vx, this.vz) < CFG.control.firstTouchSpeed
       ) {

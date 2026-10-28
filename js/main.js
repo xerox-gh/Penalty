@@ -1,3 +1,5 @@
+import { worldClub, worldRoster } from "./world.js";
+import { STADIUMS } from "./venues.js";
 import { SetPieceUI } from "./set-piece-ui.js";
 import { proCard, proSlot } from "./player-career.js";
 import * as T from "../libs/three.module.js";
@@ -48,7 +50,7 @@ class Game {
     this.renderer.toneMapping = T.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.0;
     this.renderer.shadowMap.type = T.PCFSoftShadowMap;
-    this.scene.add(new T.HemisphereLight(0xd5ecff, 0x69764d, 1.35));
+    this.ambient=new T.HemisphereLight(0xd5ecff,0x69764d,1.35);this.scene.add(this.ambient);
     this.sun = new T.DirectionalLight(0xfff1da, 2.4);
     this.sun.position.set(-18, 52, -20);
     this.sun.castShadow = true;
@@ -134,6 +136,7 @@ class Game {
       this.match?.kind === "quick" ? this.startMode("quick") : this.club.show();
     $("openClub").onclick = $("backClub").onclick = () => this.club.show();
     this.club.show();
+    this.applyVenue();
     $("mute").onclick = () => this.audio.toggle();
     $("volume").oninput = (e) => this.audio.setVolume(+e.target.value);
     $("boot").textContent = "READY TO PLAY • Local match / 5 v 5";
@@ -145,6 +148,17 @@ class Game {
           "Ready • Offline cache unavailable in this browser session.";
       });
   }
+  applyVenue() {
+    const v=this.club.save.data.presentation;
+    if(this.pitch.venue===v.stadium && this.pitch.pitchColor===v.pitchColor)return;
+    this.pitch.dispose();this.pitch=buildPitch(this.scene,v.stadium,v.pitchColor);
+    const preset=STADIUMS.find(s=>s.id===v.stadium);
+    this.sun.intensity=preset.sun;this.sun.color.set(v.stadium==='coast'?0xffd6ae:0xfff1da);
+    this.ambient.intensity=v.stadium==='metro'?1.0:1.35;
+    this.scene.fog.color.set(preset.sky[1]);
+    this.pitch.boards.visible=this.options.fieldMode==='Arena';
+    this.quality(this.options.quality);
+  }
   makeTeams() {
     if (this.teams)
       for (const team of this.teams)
@@ -155,7 +169,7 @@ class Game {
           });
           p.kit.dispose();
         }
-    const roster = this.club.save.data.squad.map(id => CARDS.find(c => c.id === id));
+    const roster = this.match?.worldHome!=null ? worldRoster(this.match.worldHome) : this.club.save.data.squad.map(id => CARDS.find(c => c.id === id));
     const pro = this.match?.kind === "player" ? this.club.save.data.playerCareer?.profile : null;
     if (pro) roster[proSlot(pro)] = proCard(pro);
     this.teams = [
@@ -166,7 +180,7 @@ class Game {
         this.options.formation,
         roster,
       ),
-      new Team(this.scene, 1, this.options.awayColor, this.options.formation),
+      new Team(this.scene, 1, this.options.awayColor, this.options.formation, this.match?.worldAway!=null?worldRoster(this.match.worldAway):[]),
     ];
     this.teams[0].lockedPlayer = pro ? proSlot(pro) : null;
     if (pro) this.teams[0].active = proSlot(pro);
@@ -237,11 +251,11 @@ class Game {
     for (const k of ["golden", "local", "auto"]) this.options[k] = $(k).checked;
     if (this.match.kind !== "quick") {
       const d = this.club.save.data,
-        rival = CLUBS[this.match.opponent];
+        rival = this.match.worldAway!=null ? worldClub(this.match.worldAway) : CLUBS[this.match.opponent];
       Object.assign(this.options, {
-        home: d.clubName,
+        home: this.match.worldHome!=null?worldClub(this.match.worldHome).name:d.clubName,
         away: rival.name,
-        homeColor: KITS.find((k) => k.id === d.kit).color,
+        homeColor: this.match.worldHome!=null?worldClub(this.match.worldHome).color:KITS.find((k) => k.id === d.kit).color,
         awayColor: rival.color,
         duration: 120,
         local: false,
@@ -258,6 +272,7 @@ class Game {
           (c) => c.id === this.match.challenge,
         ).duration;
     }
+    this.applyVenue();
     this.matchStats = { passes: 0, shots: 0 };
     this.passIntent = null;
     $("rewards").textContent = "";
@@ -458,24 +473,26 @@ class Game {
           dz = a.z - b.z,
           d = Math.hypot(dx, dz);
         if (d < 1.1 && d > 0.01) {
-          const shift = (1.1 - d) * 0.5;
+          const shift = (1.1 - d);
+          const massA=.7+(a.strength??65)/100,massB=.7+(b.strength??65)/100;
+          const shareA=massB/(massA+massB),shareB=massA/(massA+massB);
           a.x = clamp(
-            a.x + (dx / d) * shift,
+            a.x + (dx / d) * shift * shareA,
             a.openPitch ? -31 : -29,
             a.openPitch ? 31 : 29,
           );
           a.z = clamp(
-            a.z + (dz / d) * shift,
+            a.z + (dz / d) * shift * shareA,
             a.openPitch ? -21 : -19,
             a.openPitch ? 21 : 19,
           );
           b.x = clamp(
-            b.x - (dx / d) * shift,
+            b.x - (dx / d) * shift * shareB,
             b.openPitch ? -31 : -29,
             b.openPitch ? 31 : 29,
           );
           b.z = clamp(
-            b.z - (dz / d) * shift,
+            b.z - (dz / d) * shift * shareB,
             b.openPitch ? -21 : -19,
             b.openPitch ? 21 : 19,
           );
@@ -540,7 +557,8 @@ class Game {
     for (const p of this.players) {
       p.celebrate =
         this.state.name === "goal" && p.team === 1 - this.rules.kickTeam;
-      p.render(this.time, dt);
+      p.hasBall=this.ball.owner===p;
+      p.render(this.time, this.state.name==="paused"?0:dt);
     }
     this.ball.render(dt);
     this.rings.forEach((r, i) => {

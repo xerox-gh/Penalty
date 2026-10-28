@@ -1,8 +1,10 @@
+import { STADIUMS, PITCH_COLORS } from "./venues.js";
 import * as T from "../libs/three.module.js";
 import { CFG } from "./config.js";
 
 // All stadium surfaces are generated locally, including the grass and LED ribbons.
-export function buildPitch(scene) {
+export function buildPitch(scene, stadium="grand", pitchColor="classic") {
+  const venue=STADIUMS.find(v=>v.id===stadium)||STADIUMS[0], palette=PITCH_COLORS.find(v=>v.id===pitchColor)||PITCH_COLORS[0];
   const group = new T.Group();
   scene.add(group);
   const concrete = new T.MeshStandardMaterial({
@@ -11,7 +13,7 @@ export function buildPitch(scene) {
   });
   const dark = new T.MeshStandardMaterial({ color: 0x202a3b, roughness: 0.9 });
   const white = new T.MeshStandardMaterial({ color: 0xf3f3e7, roughness: 0.7 });
-  const blue = new T.MeshStandardMaterial({ color: 0x284d77, roughness: 0.9 });
+  const blue = new T.MeshStandardMaterial({ color: venue.seats, roughness: 0.9 });
   const boxGeo = new T.BoxGeometry(1, 1, 1);
   function box(w, h, d, x, y, z, mat = concrete) {
     const mesh = new T.Mesh(boxGeo, mat);
@@ -26,8 +28,8 @@ export function buildPitch(scene) {
   skyCanvas.height = 128;
   const sc = skyCanvas.getContext("2d"),
     gradient = sc.createLinearGradient(0, 0, 0, 128);
-  gradient.addColorStop(0, "#6f98ba");
-  gradient.addColorStop(1, "#dae7df");
+  gradient.addColorStop(0, venue.sky[0]);
+  gradient.addColorStop(1, venue.sky[1]);
   sc.fillStyle = gradient;
   sc.fillRect(0, 0, 16, 128);
   const sky = new T.Mesh(
@@ -38,7 +40,7 @@ export function buildPitch(scene) {
       fog: false,
     }),
   );
-  scene.add(sky);
+  group.add(sky);
   const turfCanvas = document.createElement("canvas");
   turfCanvas.width = turfCanvas.height = 1024;
   const tc = turfCanvas.getContext("2d");
@@ -56,9 +58,9 @@ export function buildPitch(scene) {
         (random() - 0.5) * 19 +
         Math.sin(x * 0.025) * 2 +
         Math.cos(y * 0.014) * 2;
-      turfData.data[i] = 66 + stripe + n;
-      turfData.data[i + 1] = 105 + stripe + n;
-      turfData.data[i + 2] = 39 + stripe * 0.4 + n * 0.5;
+      turfData.data[i] = palette.rgb[0] + stripe + n;
+      turfData.data[i + 1] = palette.rgb[1] + stripe + n;
+      turfData.data[i + 2] = palette.rgb[2] + stripe * 0.4 + n * 0.5;
       turfData.data[i + 3] = 255;
     }
   tc.putImageData(turfData, 0, 0);
@@ -79,13 +81,13 @@ export function buildPitch(scene) {
   ground.rotation.x = -Math.PI / 2;
   ground.position.y = -0.06;
   ground.receiveShadow = true;
-  scene.add(ground);
-  const paintMat = new T.MeshBasicMaterial({ color: 0xe4e5cf });
+  group.add(ground);
+  const paintMat = new T.MeshBasicMaterial({ color: palette.lines || 0xe4e5cf });
   function mark(points) {
     const vertices = points.map(([x, z]) => new T.Vector3(x, 0.025, z));
     const line = new T.Line(
       new T.BufferGeometry().setFromPoints(vertices),
-      new T.LineBasicMaterial({ color: 0xe4e5cf }),
+      new T.LineBasicMaterial({ color: palette.lines || 0xe4e5cf }),
     );
     group.add(line);
   }
@@ -202,11 +204,11 @@ export function buildPitch(scene) {
   boards.visible = false;
   // Four banks of terraces with open aisles and a continuous parapet.
   const seats = [];
-  for (let bank = 0; bank < 4; bank++) {
+  for (let bank = 0; bank < venue.banks; bank++) {
     const alongX = bank < 2,
       side = bank % 2 === 0 ? -1 : 1,
       columns = alongX ? 100 : 64;
-    for (let row = 0; row < 9; row++) {
+    for (let row = 0; row < venue.rows; row++) {
       const depth = (alongX ? 27 : 37) + row * 1.25,
         y = 0.3 + row * 0.65;
       box(
@@ -339,7 +341,34 @@ export function buildPitch(scene) {
         new T.MeshBasicMaterial({ color: 0xffffdf }),
       );
     }
-  return { crowd, heads, boards, crowdCapacity: seats.length };
+  const decor=new T.MeshStandardMaterial({color:stadium==='metro'?0x413f68:0xe3d9be,roughness:.8});
+  if(venue.roof)for(const side of [-1,1]){
+    box(86,.35,10,0,venue.rows*.65+3,side*36,decor);
+    for(const x of [-38,-19,0,19,38])box(.25,venue.rows*.65+3,.25,x,(venue.rows*.65+3)/2,side*40,concrete);
+  }
+  if(stadium==='metro')for(let i=0;i<22;i++){
+    const h=8+(i*13%23),x=(i-11)*6;
+    box(4,h,5,x,h/2,-56,decor);
+    const glow=new T.MeshBasicMaterial({color:i%2?0x5adad2:0xc98bee});
+    for(let row=2;row<h;row+=3)box(2,.45,.05,x,row,-53.45,glow);
+  }
+  if(stadium==='coast'){
+    const palmLeaves=new T.MeshStandardMaterial({color:0x39724c});
+    const water=new T.Mesh(new T.PlaneGeometry(130,180),new T.MeshStandardMaterial({color:0x438b9e,roughness:.25}));
+    water.rotation.x=-Math.PI/2;water.position.set(108,-.03,0);group.add(water);
+    for(const side of [-1,1])for(let i=0;i<5;i++){
+      const x=side*(40+i*3),z=(i-2)*12;box(.5,7,.5,x,3.5,z,decor);
+      for(let j=0;j<5;j++){const leaf=box(5,.12,.8,x,7,z,palmLeaves);leaf.rotation.y=j*Math.PI/2.5;leaf.rotation.z=.2;}
+    }
+  }
+  if(stadium==='local'){
+    box(16,4,8,-20,2,-43,decor);box(18,.6,10,-20,4.2,-43,dark);
+    const foliage=new T.MeshStandardMaterial({color:0x326346});const geo=new T.IcosahedronGeometry(3,0);
+    for(let i=0;i<18;i++){const x=i%2?45:-45,z=(Math.floor(i/2)-4)*10;box(.5,4,.5,x,2,z,concrete);const tree=new T.Mesh(geo,foliage);tree.position.set(x,5,z);group.add(tree);}
+  }
+  return { crowd, heads, boards, crowdCapacity: seats.length, venue:venue.id, pitchColor:palette.id,
+    dispose(){const geos=new Set(),mats=new Set(),textures=new Set();group.traverse(o=>{if(o.geometry)geos.add(o.geometry);if(o.material)for(const m of [].concat(o.material)){mats.add(m);if(m.map)textures.add(m.map);}});scene.remove(group);geos.forEach(g=>g.dispose());mats.forEach(m=>m.dispose());textures.forEach(t=>t.dispose());}
+  };
 }
 export class Particles {
   constructor(scene) {

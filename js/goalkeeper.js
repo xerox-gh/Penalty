@@ -14,6 +14,8 @@ export function goalkeeper(p, team, ball, dt, audio) {
     p.penaltyReaction=Math.max(0,p.penaltyReaction-dt);
     const side=p.penaltyZ-p.z;
     p.move(0,p.penaltyReaction>0||Math.abs(side)<.2?0:Math.sign(side),true,dt,1.15);
+    p.dx=team.dir;p.dz=0;
+    p.diveSide = (Math.sign(p.penaltyZ-p.z)||1)*team.dir;
     p.dive=.35;
   } else p.move(l > 0.15 ? dx / l : 0, l > 0.15 ? dz / l : 0, incoming, dt, 0.88);
   if (ball.held > 0 && ball.owner === p) {
@@ -33,6 +35,7 @@ export function goalkeeper(p, team, ball, dt, audio) {
     ball.y < 2.5 &&
     p.cooldown === 0
   ) {
+    p.diveSide = (Math.sign(ball.z-p.z)||1)*team.dir;
     p.dive = incoming ? 0.6 : 0;
     audio.play("kick");
     ball.lastTeam = team.id;

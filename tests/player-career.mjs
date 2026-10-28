@@ -8,7 +8,7 @@ const save=new Progression(storage), old=freshSave();delete old.playerCareer;
 assert.equal(validateSave(old).playerCareer,null);
 const profile={...defaultPro(),name:'Test <Pro>',position:'DEF',rarity:'Eternal',pace:87,shoot:91,pass:98};
 save.savePro(profile);
-assert.equal(proCard(profile).rating,92);
+assert.equal(proCard(profile).rating,83);
 assert.equal(proSlot(profile),1);
 assert.equal(appearanceFor(proCard(profile)),profile.look);
 assert.equal(nationalityFor(proCard(profile)).code,profile.nationality);
