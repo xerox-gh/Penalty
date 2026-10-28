@@ -1,4 +1,5 @@
-import {modeTeamPicker,assistPicker,cupMenu,displayCareerClubs} from './competition-ui.js';
+import {CUPS} from './competitions.js';
+import {modeTeamPicker,assistPicker,cupMenu,visibleCups,displayCareerClubs} from './competition-ui.js';
 import { homeMenu, worldMenu, settingsMenu, healthMenu } from "./overhaul-ui.js";
 import { WORLD_LEAGUES, worldClub } from "./world.js";
 import { STADIUMS, PITCH_COLORS } from "./venues.js";
@@ -71,6 +72,12 @@ export class Club {
       try {
         if(e.target.dataset.modeLeague){this.modeLeague??={};this.modeLeague[e.target.dataset.modeLeague]=Number(e.target.value);this.render();return;}
         if(e.target.dataset.modeTeam){this.save.selectModeClub(e.target.dataset.modeTeam,e.target.value===''?null:Number(e.target.value));this.message='Team selection saved for this mode.';this.render();return;}
+        if(e.target.id==='cupRegion'||e.target.id==='cupKind'){
+          this[e.target.id]=e.target.value;
+          if(this.cupKind==='domestic'&&(!this.cupRegion||this.cupRegion==='world'))this.cupRegion='all';
+          const cups=visibleCups(this);if(!cups.some(c=>c.id===this.cupChoice))this.cupChoice=cups[0]?.id;
+          this.render();return;
+        }
         if(e.target.id==='cupTeam'){this.cupTeam??={};this.cupTeam[this.cupChoice||'international']=e.target.value;return;}
         if (e.target.dataset.slot !== undefined)
           this.save.equip(+e.target.dataset.slot, e.target.value);
@@ -110,7 +117,7 @@ export class Club {
         this.tab = id;
         this.reveal = [];
       } else if(verb==='assist'){if(this.save.data.pending)throw Error('Finish the pending match first.');this.save.change(d=>d.aiAssist=!d.aiAssist);this.message='AI assistance setting saved.';
-      } else if(verb==='cup-view'){this.cupChoice=id;
+      } else if(verb==='cup-view'){const cup=CUPS.find(c=>c.id===id);if(!cup)throw Error('Unknown cup.');this.cupChoice=id;if(!visibleCups(this).some(c=>c.id===id)){this.cupRegion=cup.region;this.cupKind='all';}
       } else if(verb==='cup-enter'){this.save.createTournament(id,this.el.querySelector('#cupTeam').value);this.message='Draw complete. Your cup is ready.';
       } else if(verb==='cup-play'){this.game.startMode('tournament',id);return;
       } else if (verb === "world-create") {

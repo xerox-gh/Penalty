@@ -54,6 +54,25 @@ rows.push(
   ["EG", "Egypt", "h", "#cf3546", "#fff", "#222"],
   ["ZA", "South Africa", "southafrica", "#cf3546", "#fff", "#294e8d"],
 );
+// Extra national sides give each regional cup a complete eight-team field.
+// Emblems remain deliberately simplified procedural flag designs.
+rows.push(
+ ["CR","Costa Rica","h","#2453a0","#d83242","#2453a0"],
+ ["JM","Jamaica","jamaica","#187b4e","#f6d447","#171b20"],
+ ["PA","Panama","panama","#fff","#ca3444","#2459a0"],
+ ["HN","Honduras","h","#278dc6","#fff","#278dc6"],
+ ["GT","Guatemala","v","#6ea9d3","#fff","#6ea9d3"],
+ ["IN","India","h","#e99b43","#fff","#2e9656"],
+ ["IR","Iran","h","#2d9c60","#fff","#d63d46"],
+ ["EC","Ecuador","colombia","#f2d242","#2456a0","#ce3549"],
+ ["PY","Paraguay","h","#d13c49","#fff","#345fa5"],
+ ["FJ","Fiji","australia","#73b7dc","#fff"],
+ ["WS","Samoa","samoa","#ca3045","#254990","#fff"],
+ ["TO","Tonga","tonga","#c62f3c","#fff"],
+ ["SB","Solomon Islands","solomon","#264d95","#247b46","#e9cf46"],
+ ["VU","Vanuatu","vanuatu","#cb3945","#298452","#efcf48"],
+ ["PG","Papua New Guinea","papua","#d73d44","#171b20","#f0d546"],
+);
 export const NATIONS = rows.map(([code, name, pattern, ...colors]) => ({
   code,
   name,
@@ -246,5 +265,12 @@ export function flagSVG(n) {
     shapes +=
       rect(0, 10, 30, 10, c[2]) +
       `<path d="M0 0L15 10 0 20" stroke="#fff" stroke-width="8" fill="none"/><path d="M0 0L15 10H30M15 10L0 20" stroke="#238153" stroke-width="5" fill="none"/><path d="M0 3L10 10 0 17Z" fill="#222" stroke="#efcb3f"/>`;
+  if(n.pattern==='jamaica')shapes+=`<path d="M0 0L15 10 0 20ZM30 0L15 10 30 20Z" fill="${c[2]}"/><path d="M0 0L30 20M30 0L0 20" stroke="${c[1]}" stroke-width="3"/>`;
+  if(n.pattern==='panama')shapes+=rect(15,0,15,10,c[1])+rect(0,10,15,10,c[2])+star(7,5,2,c[2])+star(23,15,2,c[1]);
+  if(n.pattern==='samoa'){shapes+=rect(0,0,15,11,c[1]);for(const [x,y] of [[7,2],[4,5],[10,5],[7,9]])shapes+=star(x,y,1.2,c[2]);}
+  if(n.pattern==='tonga')shapes+=rect(0,0,14,11,c[1])+rect(5,2,3,7,c[0])+rect(3,4,7,3,c[0]);
+  if(n.pattern==='solomon')shapes+=`<path d="M0 20L30 0V20Z" fill="${c[1]}"/><path d="M0 20L30 0" stroke="${c[2]}" stroke-width="2"/>`+star(5,5,1.5,'#fff')+star(10,5,1.5,'#fff');
+  if(n.pattern==='vanuatu')shapes+=rect(0,10,30,10,c[1])+`<path d="M0 0L13 10 0 20Z" fill="#161b20"/><path d="M0 0L13 10H30M13 10L0 20" stroke="${c[2]}" stroke-width="2" fill="none"/>`;
+  if(n.pattern==='papua')shapes+=`<path d="M0 0L30 20H0Z" fill="${c[1]}"/>`+star(22,6,3,c[2])+star(7,12,2,'#fff')+star(12,16,1.5,'#fff');
   return `<svg class="nationFlag" viewBox="0 0 30 20" role="img" aria-label="${n.name} flag">${shapes}</svg>`;
 }

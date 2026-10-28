@@ -17,10 +17,10 @@ for(const def of CUPS){
  for(const ref of c.entrants){assert.ok(teamInfo(ref));assert.equal(teamRoster(ref).length,5);if(def.type==='nation')assert.ok(teamRoster(ref).every(p=>p.nationality===ref.slice(7)));}
  const s=new Progression(new Store());s.createTournament(def.id,pool[0]);const before=s.data.coins;
  while(cupOpponent(s.data.tournaments[def.id])){const p=s.begin('tournament',def.id);assert.equal(p.homeRef,pool[0]);assert.throws(()=>s.complete(p.id,{...result,gf:1,ga:1}));assert.equal(s.data.pending.id,p.id);s.complete(p.id,result);assert.equal(s.complete(p.id,result),null);validateCups(s.data.tournaments);}
- assert.equal(s.data.tournaments[def.id].status,'won');assert.equal(s.data.tournaments[def.id].round,Math.log2(def.size));assert.ok(s.data.coins>=before+700);assert.ok(s.data.trophies.some(t=>t.includes(def.name)));assert.equal(s.data.stats.cups,1);
+ assert.equal(s.data.tournaments[def.id].status,'won');assert.equal(s.data.tournaments[def.id].round,Math.log2(def.size));assert.ok(s.data.coins>=before+(def.bonusCoins??700));assert.ok(s.data.trophies.some(t=>t.includes(def.name)));assert.equal(s.data.stats.cups,1);
  const copy=new Progression(new Store());copy.import(s.export());assert.deepEqual(copy.data.tournaments,s.data.tournaments);
  s.createTournament(def.id,pool[1]);const p=s.begin('tournament',def.id);s.complete(p.id,{...result,gf:0,ga:1});assert.equal(s.data.tournaments[def.id].status,'out');assert.throws(()=>s.begin('tournament',def.id));
  const broken=structuredClone(s.data.tournaments);broken[def.id].history[0][0].winner='nation:FAKE';assert.throws(()=>validateCups(broken));
 }
 const assist=new Progression(new Store());assist.change(d=>d.aiAssist=true);const match=assist.begin('quick');assert.equal(match.aiAssist,true);assert.equal(new Progression(assist.storage).data.pending.aiAssist,true);
-console.log('PASS: all-mode league teams, legacy defaults, season locks, four full cups, nationality rosters, bracket validation, golden-goal requirement, rewards, retries, duplicate protection and offline assistance persistence.');
+console.log('PASS: all-mode league teams, legacy defaults, season locks, all catalog cups, nationality rosters, bracket validation, golden-goal requirement, rewards, retries, duplicate protection and offline assistance persistence.');

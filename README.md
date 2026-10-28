@@ -23,7 +23,7 @@ The Home tab also offers separate league-team choices for Quick Match, the class
 
 **AI Assist** is available on Home and the career/cup screens. With it enabled, the AI moves, passes and shoots for your active player when you leave the controls alone. Any movement or action gives you control immediately; assistance resumes after 1.25 seconds without input. This also works for the locked created player. The match HUD distinguishes AI ASSIST from YOU CONTROL. Local player two remains manual. Restarts retain their normal aiming controls and existing automatic timeout. The setting is captured in a pending fixture so resume uses the same mode.
 
-Open **Cups** for four persistent offline tournaments:
+The original four offline tournaments remain available in **Cups**:
 
 | Cup | Teams | Format |
 |---|---:|---|
@@ -32,11 +32,26 @@ Open **Cups** for four persistent offline tournaments:
 | Europe Nation Cup | 16 European national teams | Four knockout rounds |
 | World Club Cup | 16 league clubs from the world pool | Four knockout rounds |
 
-Choose an eligible team, enter the draw, and play each fixture. All other ties in your round are simulated; the current bracket and every completed round are visible. Tied games continue to golden goal. A title earns 700 bonus coins, three packs and a named trophy, in addition to match rewards. Each cup retains its own run; after elimination or victory you can enter again with another team and a new draw. These are original small-sided knockout formats with fictional players, not licensed recreations of real competitions or their group-stage/qualification rules. Elimination ends your run; later rounds are not simulated after you exit.
+Choose an eligible team, enter the draw, and play each fixture. All other ties in your round are simulated; the current bracket and every completed round are visible. Tied games continue to golden goal. A title in these four cups earns 700 bonus coins, three packs and a named trophy, in addition to match rewards. Each cup retains its own run; after elimination or victory you can enter again with another team and a new draw. These are original small-sided knockout formats with fictional players, not licensed recreations of real competitions or their group-stage/qualification rules. Elimination ends your run; later rounds are not simulated after you exit.
 
 Implementation: `js/competitions.js` owns eligibility, national rosters, team mappings, deterministic draws and bracket validation; `js/competition-ui.js` owns selectors and cup screens. New save fields migrate automatically. Service-worker v14 precaches both modules for offline use. `node tests/competitions.mjs` checks every selectable mode, complete runs of all four cups, losses/re-entry, nationalities, save migration, season locks and reward protection.
 
 Validation for the cups update: all ten Node suites passed. Headless Chromium verified league Club/Player Career selection, created-player insertion, AI/manual handoff, national team rosters, cup advancement, a 390px mobile layout, and the next cup fixture after an offline reload under `/Penalty/`, with no console errors. Physical mobile devices and Safari/Firefox/Edge remain unverified.
+
+## Continental and domestic cup expansion
+
+Open **Cups** and use **Region** and **Competition Type** to browse **58 offline competitions**:
+
+- **Six regions:** Europe, Asia, Africa, North America, South America and Oceania. Each has a national cup, a 16-club cup and a one-match club super cup. Europe keeps its existing Europe Cup and Europe Nation Cup; new examples include Asian Cup, Asian Club Cup and Asian Super Cup.
+- **National fields:** Europe has 16 teams; each other region has eight. Fifteen additional nationalities bring the catalog to 66 and fill the smaller regional fields, with procedural flags and fictional five-player squads.
+- **38 domestic cups:** one per existing league-country entry, with 16 clubs drawn from both divisions. USA/Canada retains its combined league-country entry. Domestic eligibility excludes foreign clubs.
+- **Worldwide cups:** International Cup and World Club Cup remain available.
+
+Super cups are open-entry two-club invitationals, not automatically qualified league/cup champions. Regional membership follows the game's geographic grouping (Australia is in Oceania); these are original arcade formats rather than official federation competitions. No Antarctica tournament is included because there are no league or national sides for it in the game.
+
+Champion bonuses are 700 coins / three packs for worldwide and regional cups, 400 / two packs for domestic cups, and 250 / one pack for super cups, plus ordinary match rewards and a named trophy. All use golden goal, saved brackets and independent runs. **Your Active Cups** shortcuts reopen a run even when it is outside the selected filters. Existing cup IDs and bracket sizes are preserved, so previous runs continue unchanged.
+
+`js/competitions.js` contains region membership, competition definitions, eligibility and rewards. `node tests/regions.mjs` verifies every regional boundary, all 38 domestic pools, old bracket compatibility and export/import with all 58 completed tournaments. `tests/competitions.mjs` now plays through every cup in the expanded catalog. The service worker is version 15; reload online after deployment to cache the update. All eleven Node suites passed. Headless Chromium verified six region filters, Asian Cup play/advancement, a super-cup title, domestic draws, 390px layout and offline next-round resume under `/Penalty/`, without console errors. Physical-device and cross-browser checks remain outstanding.
 
 ## Play locally
 
@@ -256,3 +271,7 @@ Validation: `node tests/set-pieces.mjs` checks fouls at both ends, box boundarie
 - [ ] Pick a league club in Club/Player Career and verify teammates, opponents and created-player control.
 - [ ] AI Assist takes over when idle and hands control back on input.
 - [ ] Complete a cup round, reload offline, and resume the saved bracket.
+
+- [ ] Filter all six regions; national and club pools must contain only eligible teams.
+- [ ] Win a one-match super cup and check its title/reward; start a domestic draw from both divisions.
+- [ ] Resume an active cup through its shortcut after offline reload.

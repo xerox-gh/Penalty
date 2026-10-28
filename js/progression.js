@@ -933,8 +933,8 @@ export class Progression {
       };
       if(p.kind==='tournament'){
         const c=d.tournaments[p.cupId];need(c&&c.round===p.round,"Cup result already recorded.");recordCup(c,result.gf,result.ga);
-        const name=CUPS.find(x=>x.id===p.cupId).name;
-        if(c.status==='won'){coins+=700;packs+=3;d.stats.cups++;trophy(`${name} · Champion ${c.attempt}`);notes.push(`${name} champions!`);}
+        const def=CUPS.find(x=>x.id===p.cupId),name=def.name;
+        if(c.status==='won'){coins+=def.bonusCoins??700;packs+=def.bonusPacks??3;d.stats.cups++;trophy(`${name} · Champion ${c.attempt}`);notes.push(`${name} champions!`);}
         else notes.push(c.status==='out'?`${name}: eliminated. Enter again for a fresh draw.`:`${name}: through to the next round.`);
       }
       if(p.kind === "world") {

@@ -1,12 +1,39 @@
 import { WORLD_CLUBS, WORLD_LEAGUES, worldClub, worldRoster } from './world.js';
 import { NATIONS } from './nationality.js';
-const EUROPE = new Set(['EN','SC','ES','PT','FR','DE','IT','NL','BE','HR','RS','CH','GR','TR','RU','CZ','PL','SE','NO','DK','FI','AT','UA']);
-export const CUPS = [
-  {id:'international',name:'International Cup',type:'nation',size:32,region:'world',description:'32 national teams. Five knockout rounds to become world champions.'},
-  {id:'europe',name:'Europe Cup',type:'club',size:16,region:'europe',description:'16 European clubs. Round of 16, quarter-finals, semi-finals and final.'},
-  {id:'europe-nations',name:'Europe Nation Cup',type:'nation',size:16,region:'europe',description:'16 European national teams compete for continental glory.'},
-  {id:'world-clubs',name:'World Club Cup',type:'club',size:16,region:'world',description:'16 clubs from around the world. One global club champion.'},
+// Geographic game regions: Australia belongs to Oceania here. These are original
+// arcade formats, not current federation membership/qualification rules.
+export const REGIONS = [
+ {id:'europe',name:'Europe',adjective:'European',codes:'EN SC ES PT FR DE IT NL BE HR RS CH GR TR RU CZ PL SE NO DK FI AT UA IE RO'},
+ {id:'asia',name:'Asia',adjective:'Asian',codes:'JP KR CN SA ID BD IN IR'},
+ {id:'africa',name:'Africa',adjective:'African',codes:'NG EG MA ZA DZ GH SN CM'},
+ {id:'north-america',name:'North America',adjective:'North American',codes:'US CA MX CR JM PA HN GT'},
+ {id:'south-america',name:'South America',adjective:'South American',codes:'BR AR CO CL UY PE EC PY'},
+ {id:'oceania',name:'Oceania',adjective:'Oceanian',codes:'AU NZ FJ WS TO SB VU PG'},
 ];
+const regionByNation=new Map(REGIONS.flatMap(r=>r.codes.split(' ').map(code=>[code,r.id])));
+export const nationRegion=code=>regionByNation.get(code);
+const clubNations=new Map(WORLD_CLUBS.map(c=>[c.id,worldRoster(c.id)[0].nationality]));
+export const clubRegion=id=>nationRegion(clubNations.get(id));
+const firstClubByNation=new Map();
+for(const [id,code] of clubNations)if(!firstClubByNation.has(code))firstClubByNation.set(code,id);
+// Preserve original cup IDs and sizes so every existing bracket stays valid.
+export const CUPS = [
+ {id:'international',name:'International Cup',type:'nation',kind:'nation',size:32,region:'world',description:'32 national teams. Five knockout rounds to become world champions.'},
+ {id:'europe',name:'Europe Cup',type:'club',kind:'club',size:16,region:'europe',description:'16 European clubs compete for continental glory.'},
+ {id:'europe-nations',name:'Europe Nation Cup',type:'nation',kind:'nation',size:16,region:'europe',description:'16 European national teams. Four rounds to lift the trophy.'},
+ {id:'world-clubs',name:'World Club Cup',type:'club',kind:'club',size:16,region:'world',description:'16 clubs from around the world. One global club champion.'},
+];
+for(const r of REGIONS){
+ if(r.id!=='europe')CUPS.push(
+  {id:r.id+'-nations',name:(r.id==='asia'?'Asian':r.id==='africa'?'African':r.name)+' Cup',type:'nation',kind:'nation',size:8,region:r.id,description:`Eight ${r.adjective.toLowerCase()} national sides. Quarter-finals, semi-finals and final.`},
+  {id:r.id+'-clubs',name:(r.id==='asia'?'Asian':r.id==='africa'?'African':r.name)+' Club Cup',type:'club',kind:'club',size:16,region:r.id,description:`16 league clubs from ${r.name}. Four knockout rounds.`}
+ );
+ CUPS.push({id:r.id+'-super',name:(r.id==='asia'?'Asian':r.id==='africa'?'African':r.name)+' Super Cup',type:'club',kind:'super',size:2,region:r.id,bonusCoins:250,bonusPacks:1,description:`A one-match ${r.adjective.toLowerCase()} club invitational. Open entry; no qualification required.`});
+}
+for(const l of WORLD_LEAGUES.filter(l=>l.tier===0))CUPS.push({
+ id:'domestic-'+l.id/2,name:l.country+' Domestic Cup',type:'club',kind:'domestic',size:16,region:clubRegion(l.clubs[0]),country:l.country,countryIndex:l.id/2,bonusCoins:400,bonusPacks:2,
+ description:`16 ${l.country} clubs drawn from both divisions. Four knockout rounds to win the domestic trophy.`
+});
 export const clubRef = id => `club:${id}`;
 export function teamInfo(ref) {
   if(typeof ref!=='string')return null;
@@ -18,8 +45,7 @@ export function teamInfo(ref) {
 export function teamRoster(ref) {
   const info=teamInfo(ref);if(!info)return [];
   if(ref.startsWith('club:'))return worldRoster(Number(ref.slice(5)));
-  const candidates=WORLD_CLUBS.filter(c=>worldRoster(c.id)[0].nationality===info.nationality);
-  const base=worldRoster(candidates[0]?.id ?? 0);
+  const base=worldRoster(firstClubByNation.get(info.nationality) ?? 0);
   return base.map((p,i)=>({...p,id:`${ref}-${i}`,nationality:info.nationality,rating:80+i%3,pace:79+i,shoot:80,pass:82,strength:81,dribble:82}));
 }
 const poolCache=new Map();
@@ -29,13 +55,13 @@ export function cupPool(id) {
 }
 function buildPool(id) {
   const def=CUPS.find(c=>c.id===id);if(!def)return [];
-  if(def.type==='nation')return NATIONS.filter(n=>n.code!=='GB'&&(def.region!=='europe'||EUROPE.has(n.code))).map(n=>`nation:${n.code}`);
-  return WORLD_CLUBS.filter(c=>def.region!=='europe'||EUROPE.has(worldRoster(c.id)[0].nationality)).map(c=>clubRef(c.id));
+  if(def.type==='nation')return NATIONS.filter(n=>n.code!=='GB'&&(def.region==='world'||nationRegion(n.code)===def.region)).map(n=>`nation:${n.code}`);
+  return WORLD_CLUBS.filter(c=>def.kind==='domestic'?Math.floor(c.lid/2)===def.countryIndex:def.region==='world'||clubRegion(c.id)===def.region).map(c=>clubRef(c.id));
 }
 export const cupStage = n => ({2:'FINAL',4:'SEMI-FINAL',8:'QUARTER-FINAL',16:'ROUND OF 16',32:'ROUND OF 32'}[n] || 'COMPLETE');
 export function newCup(id, team, attempt=1) {
   const def=CUPS.find(c=>c.id===id),pool=cupPool(id);
-  if(!def||!pool.includes(team))throw Error('Choose an eligible team for this cup.');
+  if(!def||pool.length<def.size||!pool.includes(team))throw Error('Choose an eligible team for this cup.');
   // Deterministic draw per attempt, spread club entries across countries where possible.
   const others=pool.filter(x=>x!==team);let seed=attempt*937+id.length*31;
   for(let i=others.length-1;i>0;i--){seed=(Math.imul(seed,1664525)+1013904223)>>>0;const j=seed%(i+1);[others[i],others[j]]=[others[j],others[i]];}
@@ -60,7 +86,7 @@ export function validateCups(value={}) {
   if(!value||Array.isArray(value)||typeof value!=='object')throw Error('Invalid cup careers.');
   for(const [id,c] of Object.entries(value)){
     const def=CUPS.find(x=>x.id===id),pool=cupPool(id);
-    const ok=def&&c.id===id&&pool.includes(c.team)&&Number.isSafeInteger(c.attempt)&&c.attempt>0&&c.attempt<=1000000&&Number.isInteger(c.round)&&c.round>=0&&c.round<=Math.log2(def.size)&&['active','won','out'].includes(c.status)&&Array.isArray(c.entrants)&&c.entrants.length===def.size&&new Set(c.entrants).size===def.size&&c.entrants.includes(c.team)&&c.entrants.every(r=>pool.includes(r))&&Array.isArray(c.history)&&c.history.length===c.round;
+    const ok=def&&c&&c.id===id&&pool.includes(c.team)&&Number.isSafeInteger(c.attempt)&&c.attempt>0&&c.attempt<=1000000&&Number.isInteger(c.round)&&c.round>=0&&c.round<=Math.log2(def.size)&&['active','won','out'].includes(c.status)&&Array.isArray(c.entrants)&&c.entrants.length===def.size&&new Set(c.entrants).size===def.size&&c.entrants.includes(c.team)&&c.entrants.every(r=>pool.includes(r))&&Array.isArray(c.history)&&c.history.length===c.round;
     if(!ok)throw Error('Invalid tournament bracket.');
     let alive=[...c.entrants];
     for(const round of c.history){if(!Array.isArray(round)||round.length!==alive.length/2)throw Error('Invalid cup results.');
