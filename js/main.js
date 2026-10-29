@@ -1,3 +1,4 @@
+import {Practice,PracticeUI} from './practice.js';
 import { teamInfo, teamRoster } from './competitions.js';
 import { worldClub, worldRoster } from "./world.js";
 import { STADIUMS } from "./venues.js";
@@ -40,6 +41,7 @@ class Game {
     this.input = new Input();
     this.hud = new HUD();
     this.setPieceUI = new SetPieceUI(this);
+    this.practiceUI = new PracticeUI(this);
     this.scene = new T.Scene();
     this.scene.background = new T.Color(0x6b91ad);
     this.scene.fog = new T.Fog(0x6b91ad, 75, 180);
@@ -211,8 +213,15 @@ class Game {
     this.camera.camera.aspect = innerWidth / innerHeight;
     this.camera.camera.updateProjectionMatrix();
   }
+  startPractice(id,difficulty){
+    const practice=new Practice(this,id,difficulty);
+    this.practice=null;this.match={kind:'practice',opponent:1,aiAssist:false};this.start();
+    this.options.difficulty=practice.difficulty;this.options.duration=3600;this.options.golden=false;this.options.auto=true;this.options.fieldMode='Stadium';this.players.forEach(p=>p.openPitch=true);
+    this.practice=practice;practice.reset();
+  }
   startMode(kind, challenge) {
     try {
+      this.practice=null;
       this.match = kind
         ? this.club.save.begin(kind, challenge)
         : this.club.save.data.pending;
@@ -224,6 +233,7 @@ class Game {
     }
   }
   onMatchFinished() {
+    if(this.match?.kind==='practice')return;
     const reward = this.club.save.complete(this.match?.id, {
       gf: this.teams[0].score,
       ga: this.teams[1].score,
@@ -415,6 +425,7 @@ class Game {
     const s = this.state.name;
     if (s === "hub" || s === "menu" || s === "paused" || s === "fulltime")
       return;
+    if(this.practice?.update(dt))return;
     this.state.tick(dt);
     if (s === "lineup") {
       if (!this.state.timer) this.state.set("countdown", CFG.match.countdown);
@@ -610,6 +621,7 @@ class Game {
       this.rules.restart,
     );
     this.setPieceUI.update();
+    this.practiceUI.update();
     this.hud.update(this);
     this.renderer.render(this.scene, this.camera.camera);
     this.fpsTime += dt;

@@ -62,6 +62,25 @@ Champion bonuses are 700 coins / three packs for worldwide and regional cups, 40
 
 Tune throw height/follow-through, penalty composure speed and contact lift in `CFG.setPiece`. `js/animation.js` owns celebration/throw poses and `js/set-piece-ui.js` owns the trajectory and strike-point controls. All visuals stay procedural; save formats and career/cup progress are unchanged. Service-worker v16 caches the update. All twelve Node suites passed. Chromium checks covered the redesigned hub, throw delivery, strike-point sliders, finite trajectory geometry, keyboard charging after slider edits, a 390px penalty layout, scorer celebration and offline restarts under `/Penalty/`, with no console errors. Real-device browser/gamepad testing remains outstanding.
 
+## Practice / Training Ground
+
+Open **Practice** in the navigation (or the Home shortcut). Choose Easy, Medium or Hard and start one of eight repeatable drills:
+
+| Drill | Objective |
+|---|---|
+| Attack the box | Beat the defence and score within 25 seconds |
+| Stop the counter | Win possession, clear beyond halfway or protect your goal for 25 seconds |
+| Penalty shooting | Score using the target, power and composure ring |
+| Penalty saves | Choose the keeper's dive direction and stop the AI penalty |
+| Free kicks | Shape a shot around/over the wall and score |
+| Corners | Deliver and finish the chance |
+| Throw-ins | Complete a throw to another teammate |
+| Goal kicks | Deliver to a teammate who controls the first touch |
+
+Practice uses the normal match/set-piece controls, your equipped squad and selected stadium. Training forces open touchlines, manual player control with auto-switching, and solo play. AI difficulty affects opposition. **Reset** repeats the setup; **Switch Side** mirrors the drill across the pitch (central penalties stay central); **Drills / Exit** returns to the hub. Attempts automatically reset three seconds after a result, with full stamina restored. Live attempts have a 25-second limit, separate from the normal set-piece aiming countdown. Pause freezes the attempt/retry timer.
+
+The HUD shows successes and completed attempts for the current session. Practice has no coin/XP/pack rewards, does not consume or overwrite a pending career/cup fixture, and never writes progression. Scores and attempt counts are session-only and reset when you exit or reload. `js/practice.js` defines drills, objectives, retry behavior and the training HUD. Service-worker v17 caches practice for offline use. All thirteen Node suites passed. Chromium checked all eight drills, reset/mirroring, automatic retries, pause/resume, mobile HUD spacing, offline penalty practice and byte-for-byte preservation of a pending career save. Physical-device and cross-browser validation remain outstanding.
+
 ## Play locally
 
 From the repository root:
@@ -288,3 +307,8 @@ Validation: `node tests/set-pieces.mjs` checks fouls at both ends, box boundarie
 - [ ] Throw from both sidelines; confirm overhead release, short delivery and no direct goal.
 - [ ] Set curl/lift, charge a free kick, time a penalty and test touch cancellation.
 - [ ] Inspect three celebrations and ensure kickoff restores normal player poses.
+
+- [ ] Start each practice drill, reset/mirror it, and verify the objective result.
+- [ ] Pause during an attempt and retry countdown; resume without losing time.
+- [ ] Enter/exit practice with an unfinished career fixture; verify the save remains unchanged.
+- [ ] Reload offline and start a practice set piece on mobile.

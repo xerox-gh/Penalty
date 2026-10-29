@@ -39,7 +39,7 @@ export class HUD {
     document.getElementById("score").textContent =
       `${g.teams[0].score} : ${g.teams[1].score}`;
     const left = Math.max(0, Math.ceil(g.options.duration - g.rules.elapsed));
-    document.getElementById("clock").textContent = g.rules.golden
+    document.getElementById("clock").textContent = g.practice?"TRAINING":g.rules.golden
       ? "GOLDEN"
       : `${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}`;
     document.getElementById("stamina").value = p.stamina;

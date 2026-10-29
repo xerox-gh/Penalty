@@ -45,6 +45,7 @@ export class Rules {
         const own=id!==b.throwInTeam;
         this.award(own?'CORNER':'GOAL KICK',1-b.throwInTeam,Math.sign(b.x)*(own?29.3:28),own?Math.sign(b.z||1)*19.3:0);return;
       }
+      if(g.practice){g.practice.goal(id);return;}
       g.celebration={team:id,index:b.lastTeam===id?(b.lastPlayer??4):4,time:0};
       g.teams[id].score++;
       this.goals++;
@@ -106,6 +107,7 @@ export class Rules {
     }
   }
   award(type, team, x, z) {
+    if(this.g.practice?.stage==='live'){this.g.practice.restart(type,team);return;}
     const g = this.g;
     this.restart = { type, team, x, z };
     g.ball.vx = g.ball.vy = g.ball.vz = 0;

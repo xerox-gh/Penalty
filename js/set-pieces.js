@@ -274,6 +274,7 @@ export function strikeRestart(g, short = false) {
     g.matchStats.shots++;
   if (r.team === 0 && short) g.passIntent = { from: p.index, ttl: 4 };
   g.camera && (g.camera.shake = 0.2);
+  g.practice?.release(r);
   g.rules.lastRestart = { type: r.type, team: r.team, timing:r.timing };
   g.rules.restart = null;
   g.state.set("playing");

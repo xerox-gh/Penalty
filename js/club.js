@@ -1,3 +1,4 @@
+import {practiceMenu} from './practice.js';
 import {CUPS} from './competitions.js';
 import {modeTeamPicker,assistPicker,cupMenu,visibleCups,displayCareerClubs} from './competition-ui.js';
 import { homeMenu, worldMenu, settingsMenu, healthMenu } from "./overhaul-ui.js";
@@ -92,6 +93,7 @@ export class Club {
     this.render();
   }
   show() {
+    if(this.game.practice){this.game.practice=null;this.game.match=null;}
     this.game.input.clear();
     this.game.state.set("hub");
     this.render();
@@ -116,6 +118,7 @@ export class Club {
       if (verb === "tab") {
         this.tab = id;
         this.reveal = [];
+      } else if(verb==='practice'){this.game.startPractice(id,this.el.querySelector('#practiceDifficulty').value);return;
       } else if(verb==='assist'){if(this.save.data.pending)throw Error('Finish the pending match first.');this.save.change(d=>d.aiAssist=!d.aiAssist);this.message='AI assistance setting saved.';
       } else if(verb==='cup-view'){const cup=CUPS.find(c=>c.id===id);if(!cup)throw Error('Unknown cup.');this.cupChoice=id;if(!visibleCups(this).some(c=>c.id===id)){this.cupRegion=cup.region;this.cupKind='all';}
       } else if(verb==='cup-enter'){this.save.createTournament(id,this.el.querySelector('#cupTeam').value);this.message='Draw complete. Your cup is ready.';
@@ -226,6 +229,7 @@ export class Club {
       locked = !!d.pending;
     let body = "";
     if (this.tab === "play") body=homeMenu(this)+assistPicker(this)+'<details class=modeOptions><summary>MATCH OPTIONS · TEAM SELECTION</summary>'+modeTeamPicker(this,'quick','QUICK MATCH')+modeTeamPicker(this,'cup','CLASSIC KNOCKOUT CUP')+modeTeamPicker(this,'challenge','CHALLENGES')+'</details>';
+    if(this.tab==='practice')body=practiceMenu();
     if(this.tab==='cups')body=cupMenu(this)+assistPicker(this);
     if (this.tab === "world") body=worldMenu(this)+assistPicker(this);
     if (this.tab === "settings") body=settingsMenu(this);
@@ -282,6 +286,7 @@ export class Club {
       ["play", "HOME"],
       ["world", "WORLD LEAGUES"],
       ["cups", "CUPS"],
+      ["practice", "PRACTICE"],
       ["career", "CLUB CAREER"],
       ["player", "PLAYER CAREER"],
       ["squad", "SQUAD & CARDS"],
