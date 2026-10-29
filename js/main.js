@@ -411,7 +411,7 @@ class Game {
     return !this.options.aiAssist || (this.assistManual||0)>0;
   }
   step(dt) {
-    this.time += dt;
+    if(this.state.name!=="paused")this.time += dt;
     const s = this.state.name;
     if (s === "hub" || s === "menu" || s === "paused" || s === "fulltime")
       return;
@@ -429,6 +429,19 @@ class Game {
       return;
     }
     if (s === "goal") {
+      const celebration=this.celebration;
+      if(celebration){
+        celebration.time+=dt;const scorer=this.teams[celebration.team].players[celebration.index];
+        for(const p of this.players){
+          p.celebrationTime=celebration.time;
+          p.dive=Math.max(0,p.dive-dt);p.slide=Math.max(0,p.slide-dt);p.header=Math.max(0,p.header-dt);p.kick=Math.max(0,p.kick-dt);
+          if(p.team===celebration.team){
+            const tx=p===scorer?clamp(p.x+this.teams[p.team].dir*3,-27,27):scorer.x-this.teams[p.team].dir*(1+p.index*.35),tz=p===scorer?Math.sign(p.z||1)*13:scorer.z+(p.index-2)*1.2;
+            const dx=tx-p.x,dz=tz-p.z,len=Math.hypot(dx,dz)||1,speed=p===scorer?(celebration.time<1?3:Math.max(0,2-(celebration.time-1)*1.5)):Math.min(2,len);
+            p.vx=dx/len*speed;p.vz=dz/len*speed;p.x+=p.vx*dt;p.z+=p.vz*dt;p.dx=dx/len;p.dz=dz/len;
+          }else{p.vx=p.vz=0;}
+        }
+      }
       this.particles.update(dt);
       if (!this.state.timer) {
         if (
@@ -582,15 +595,15 @@ class Game {
       r.position.set(p.x, 0.07, p.z);
       this.markers[i].position.set(p.x, 2.3, p.z);
       this.markers[i].visible =
-        !["menu", "hub"].includes(this.state.name) &&
+        !["menu", "hub", "goal"].includes(this.state.name) &&
         (i === 0 || this.options.local);
       r.visible =
-        !["menu", "hub"].includes(this.state.name) &&
+        !["menu", "hub", "goal"].includes(this.state.name) &&
         (i === 0 || this.options.local);
     });
     this.camera.update(
       this.ball,
-      this.teams[0].players[this.teams[0].active],
+      this.state.name==="goal"&&this.celebration?this.teams[this.celebration.team].players[this.celebration.index]:this.teams[0].players[this.teams[0].active],
       this.state.name === "hub" ? "menu" : this.state.name,
       this.time,
       dt,

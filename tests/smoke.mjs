@@ -60,7 +60,7 @@ ball.reset(5, 21);
 ball.lastTeam = 0;
 g.state.set("playing");
 rules.update(1 / 60);
-assert.equal(g.notice, "KICK-IN");
+assert.equal(g.notice, "THROW-IN");
 assert.equal(rules.restart.team, 1);
 rules.takeRestart();
 assert.equal(g.state.name, "setpiece");
@@ -126,7 +126,7 @@ for (let i = 0; i < 10800; i++) {
   assert.ok(players.every((p) => Number.isFinite(p.x) && Number.isFinite(p.z)));
 }
 console.log(
-  "PASS: goals, kick-ins, corners, goal kicks, boards, bounce, shots, keeper catch/distribution, formations; 180-second 10-player simulation took " +
+  "PASS: goals, throw-ins, corners, goal kicks, boards, bounce, shots, keeper catch/distribution, formations; 180-second 10-player simulation took " +
     (performance.now() - start).toFixed(0) +
     "ms",
 );

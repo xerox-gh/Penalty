@@ -73,7 +73,7 @@ for (const team of [0, 1])
     "FREE KICK",
     "CORNER",
     "GOAL KICK",
-    "KICK-IN",
+    "THROW-IN",
   ]) {
     g.options.local = true;
     const dir = g.teams[team].dir;

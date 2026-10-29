@@ -8,7 +8,8 @@ import { CFG, clamp } from "./config.js";
 const geometry = {
   detail: new T.BoxGeometry(1, 1, 1),
   neck: new T.CylinderGeometry(0.07, 0.085, 0.13, 6),
-  torso: new T.CylinderGeometry(0.25, 0.2, 0.54, 8),
+  torso: new T.LatheGeometry([new T.Vector2(.19,-.27),new T.Vector2(.21,-.16),new T.Vector2(.28,.17),new T.Vector2(.25,.25),new T.Vector2(.12,.29)],8),
+  hand:new T.SphereGeometry(.055,6,4),
   head: new T.IcosahedronGeometry(0.18, 1),
   thigh: new T.CylinderGeometry(0.105, 0.083, 0.4, 6),
   shin: new T.CylinderGeometry(0.08, 0.06, 0.38, 6),
@@ -78,8 +79,8 @@ export class Player {
       parent.add(m);
       return m;
     };
-    add(this.root, geometry.torso, this.kit, 0, 1.22, 0);
-    add(this.root, geometry.shorts, shortsMat, 0, 0.88, 0);
+    const torso=add(this.root, geometry.torso, this.kit, 0, 1.22, 0);torso.scale.z=.78;
+    const shorts=add(this.root, geometry.shorts, shortsMat, 0, 0.88, 0);shorts.scale.y=.65;
     add(this.root, geometry.neck, skin, 0, 1.51, 0);
     const head = buildHead(this.appearance);
     head.position.set(0, 1.67, 0.01);
@@ -90,13 +91,14 @@ export class Player {
       m.scale.set(sx, sy, sz);
       return m;
     };
-    detail(this.root, goldMat, -0.105, 1.31, 0.219, 0.063, 0.079, 0.015);
-    detail(this.root, sockMat, 0.11, 1.32, 0.216, 0.065, 0.012, 0.015);
-    detail(this.root, sockMat, 0, 1.13, 0.243, 0.24, 0.021, 0.012);
+    detail(this.root, goldMat, -0.105, 1.31, 0.205, 0.063, 0.079, 0.015);
+    detail(this.root, sockMat, 0.11, 1.32, 0.204, 0.065, 0.012, 0.015);
+    detail(this.root, sockMat, 0, 1.13, 0.174, 0.24, 0.021, 0.012);
     detail(this.root, this.kit, -0.172, 0.87, 0.137, 0.031, 0.2, 0.012);
     detail(this.root, this.kit, 0.172, 0.87, 0.137, 0.031, 0.2, 0.012);
     const collar = add(this.root, geometry.sleeve, sockMat, 0, 1.49, 0);
     collar.scale.set(0.85, 0.2, 0.85);
+    this.feet=[];
     this.legs = [];
     this.knees = [];
     this.arms = [];
@@ -107,12 +109,15 @@ export class Player {
       this.root.add(hip);
       this.legs.push(hip);
       add(hip, geometry.thigh, skin, 0, -0.2, 0);
+      const shortLeg=add(hip,geometry.sleeve,shortsMat,0,-.055,0);shortLeg.scale.set(1.18,1.05,1.15);
       const knee = new T.Group();
       knee.position.y = -0.4;
       hip.add(knee);
       this.knees.push(knee);
       add(knee, geometry.shin, sockMat, 0, -0.17, 0);
-      add(knee, geometry.boot, bootMats[appearance % 4], 0, -0.34, 0.065);
+      const ankle=new T.Group();ankle.position.set(0,-.34,0);knee.add(ankle);this.feet.push(ankle);
+      const boot=add(ankle, geometry.boot, bootMats[appearance % 4], 0, 0, 0.065);boot.scale.y=.8;
+      detail(ankle,shortsMat,0,-.045,.065,.16,.025,.29);
       detail(knee, this.kit, 0, -0.047, 0.067, 0.1, 0.038, 0.021);
       detail(knee, sockMat, 0, -0.279, 0.1, 0.026, 0.011, 0.09);
       const shoulder = new T.Group();
@@ -127,6 +132,7 @@ export class Player {
       shoulder.add(elbow);
       this.elbows.push(elbow);
       add(elbow, geometry.forearm, skin, 0, -0.14, 0);
+      add(elbow,geometry.hand,this.keeper?sockMat:skin,0,-.29,.008);
       detail(
         elbow,
         this.keeper ? sockMat : skin,
@@ -160,12 +166,12 @@ export class Player {
       }),
       0,
       1.22,
-      -0.232,
+      -0.20,
     );
     number.rotation.y = Math.PI;
     this.body = new T.Group();this.body.position.y=.84;
     for(const child of [...this.root.children]){child.position.y-=.84;this.body.add(child);}
-    this.root.add(this.body);this.animator=new PlayerAnimator(index+team*5);this.header=0;
+    this.root.add(this.body);this.animator=new PlayerAnimator(index+team*5);this.header=0;this.throwReady=false;this.throwTime=0;this.celebrationKind=(index+team)%3;
     scene.add(this.root);
   }
   move(x, z, sprint, dt, mult = 1) {

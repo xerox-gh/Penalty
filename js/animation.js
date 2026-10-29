@@ -14,6 +14,7 @@ export class PlayerAnimator {
     this.header = 0;
     this.celebrate = 0;
     this.state = "idle";
+    this.throwBlend=0;
   }
   update(p, t, dt) {
     const blend = 1 - Math.exp(-dt * 14),
@@ -37,6 +38,8 @@ export class PlayerAnimator {
     this.dive = mix(this.dive, p.dive > 0 ? 1 : 0, 1 - Math.exp(-dt * 13));
     this.header = mix(this.header, p.header > 0 ? 1 : 0, blend);
     this.celebrate = mix(this.celebrate, p.celebrate ? 1 : 0, blend);
+    p.throwTime=Math.max(0,(p.throwTime||0)-dt);
+    this.throwBlend=mix(this.throwBlend,p.throwReady||p.throwTime>0?1:0,blend);
     const phase = this.phase,
       step = Math.sin(phase),
       stride = (0.55 + sprint * 0.25 - dribble * 0.12) * run;
@@ -66,6 +69,7 @@ export class PlayerAnimator {
       p.legs[i].rotation.set(Math.sin(cycle) * stride, 0, s * 0.025);
       p.knees[i].rotation.x =
         Math.max(0, -Math.sin(cycle)) * (0.8 + sprint * 0.4) * run + 0.06;
+      if(p.feet)p.feet[i].rotation.x=clamp(-p.legs[i].rotation.x-p.knees[i].rotation.x,-.6,.6)*run;
       p.arms[i].rotation.set(
         -Math.sin(cycle) * run * (0.45 + sprint * 0.25),
         0,
@@ -103,20 +107,33 @@ export class PlayerAnimator {
         p.arms[i].rotation.x = mix(p.arms[i].rotation.x, -1.6, this.dive);
         p.elbows[i].rotation.x = mix(p.elbows[i].rotation.x, -0.1, this.dive);
       }
-    if (this.celebrate > 0.01)
-      for (let i = 0; i < 2; i++) {
-        p.arms[i].rotation.z = mix(
-          p.arms[i].rotation.z,
-          i ? -2.5 : 2.5,
-          this.celebrate,
-        );
-        p.elbows[i].rotation.x = mix(
-          p.elbows[i].rotation.x,
-          -0.5,
-          this.celebrate,
-        );
+    if(this.throwBlend>.01){
+      const f=this.throwBlend,release=p.throwReady?0:1-(p.throwTime||0)/.75;
+      p.body.rotation.x=mix(p.body.rotation.x,p.throwReady?-.1:.12,f);
+      for(let i=0;i<2;i++){
+        p.arms[i].rotation.x=mix(p.arms[i].rotation.x,-2.85+release*1.55,f);
+        p.arms[i].rotation.z=mix(p.arms[i].rotation.z,i?-.2:.2,f);
+        p.elbows[i].rotation.x=mix(p.elbows[i].rotation.x,-.45*(1-release),f);
+        p.legs[i].rotation.x=mix(p.legs[i].rotation.x,0,f);p.knees[i].rotation.x=mix(p.knees[i].rotation.x,.06,f);
       }
+    }
+    if (this.celebrate > 0.01){
+      const f=this.celebrate,age=p.celebrationTime||0,kind=p.celebrationKind||0;
+      p.body.rotation.y=0;
+      if(kind===0&&age>1){ // Knee slide: hips lowered, shins trailing and arms wide.
+        p.body.position.y=mix(p.body.position.y,.45,f);p.body.rotation.x=mix(p.body.rotation.x,-.18,f);
+        for(let i=0;i<2;i++){p.legs[i].rotation.x=mix(p.legs[i].rotation.x,-.2,f);p.knees[i].rotation.x=mix(p.knees[i].rotation.x,1.5,f);p.arms[i].rotation.z=mix(p.arms[i].rotation.z,i?-1.5:1.5,f);p.elbows[i].rotation.x=-.3;}
+      }else if(kind===1){ // Jump and fist pump.
+        p.root.position.y+=Math.max(0,Math.sin(age*4))* .24*f;
+        p.arms[1].rotation.x=mix(p.arms[1].rotation.x,-2.6,f);p.elbows[1].rotation.x=-.9;
+        p.arms[0].rotation.z=mix(p.arms[0].rotation.z,.65,f);p.knees[1].rotation.x+=.5*f;
+      }else if(kind===2){ // Arms-out run, then salute the stand.
+        for(let i=0;i<2;i++){p.arms[i].rotation.z=mix(p.arms[i].rotation.z,i?-1.6:1.6,f);p.elbows[i].rotation.x=-.12;}
+        if(age>2.1){p.arms[1].rotation.x=-1.6;p.elbows[1].rotation.x=-1.2;}
+      }
+    }
     this.state =
+      this.throwBlend>.3?"throw":
       this.celebrate > 0.3
         ? "celebrate"
         : this.dive > 0.3

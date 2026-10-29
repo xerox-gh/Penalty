@@ -33,6 +33,7 @@ function place(p, x, z, dir) {
   p.dz = 0;
   p.target.x = p.x;
   p.target.z = p.z;
+  p.throwReady=false;p.throwTime=0;
   p.penaltyDiveTime = 0;
   p.setPieceHold = 0;
   p.setPieceRun = 0;
@@ -71,6 +72,7 @@ export function prepareRestart(g, r) {
     charge: 0,
     diveChoice: 0,
     committed: false,
+    contactX:0,contactY:0,
   });
   // Ready the ball and remove residual possession/slide velocities before arranging players.
   g.ball.reset(r.x, r.z);
@@ -138,11 +140,11 @@ export function prepareRestart(g, r) {
       place(
         p,
         clamp(r.x + r.dir * (7 + i * 5), -25, 25),
-        r.type === "KICK-IN" ? side * (12 - i * 5) : (i - 1.5) * 8,
+        r.type === "THROW-IN" ? side * (12 - i * 5) : (i - 1.5) * 8,
         r.dir,
       ),
     );
-    r.aimX = r.type === "KICK-IN" ? r.dir * side * 0.4 : 0;
+    r.aimX = r.type === "THROW-IN" ? r.dir * side * 0.4 : 0;
     r.aimY = 0.45;
   }
   // Keep opponents five metres clear of the ball at every restart.
@@ -158,15 +160,25 @@ export function prepareRestart(g, r) {
         -r.dir,
       );
     }
+  if(r.type==='THROW-IN'){
+    taker.x=r.x;taker.z=Math.sign(r.z)*20.25;taker.dx=0;taker.dz=-Math.sign(r.z);taker.throwReady=true;
+    g.ball.y=CFG.setPiece.throwHeight;g.ball.z=r.z;
+  }
   g.input?.clear();
   g.state.set("setpiece");
 }
 // Ballistic height compensates for travel time. Wide/high aim and too much power can miss.
+export function composure(r){return r.type==='PENALTY'?1-Math.abs(Math.sin((r.elapsed||0)*CFG.setPiece.timingSpeed)):1;}
+export function setContact(r,x,y){r.contactX=clamp(x,-1,1);r.contactY=clamp(y,-1,1);r.spin=-r.contactX*CFG.setPiece.maxSpin;}
 export function launchValues(r, short = false) {
   const target = targetFor(r),
     dx = target.x - r.x,
     dz = target.z - r.z,
     range = Math.hypot(dx, dz);
+  if(r.type==='THROW-IN'){
+    const time=(short?.72:1.05)+r.power*.38;
+    return {dx,dz,speed:range*CFG.ball.drag/(1-Math.exp(-CFG.ball.drag*time)),lift:clamp((.3-CFG.setPiece.throwHeight)/time+CFG.ball.gravity*time/2,2,12),spin:0};
+  }
   let speed = r.type === "PENALTY" ? 20 + r.power * 14 : 18 + r.power * 16;
   let time =
     -Math.log(Math.max(0.15, 1 - (CFG.ball.drag * range) / speed)) /
@@ -188,7 +200,7 @@ export function launchValues(r, short = false) {
     dx,
     dz,
     speed,
-    lift: clamp(lift, 0, 18),
+    lift: clamp(lift+(short?0:(r.contactY||0)*CFG.setPiece.contactLift), 0, 18),
     spin: short
       ? 0
       : goalAim(r) && r.type === "PENALTY"
@@ -213,8 +225,21 @@ export function strikeRestart(g, short = false) {
       speed: clamp(distance(mate, r) * 1.1 + 5, 10, 25),
     };
   }
-  if (!g.ball.kick(p, shot.dx, shot.dz, shot.speed, shot.lift, shot.spin))
-    return false;
+  if(r.type==='THROW-IN'){
+    if(short){const range=Math.hypot(shot.dx,shot.dz),time=.9;shot.speed=range*CFG.ball.drag/(1-Math.exp(-CFG.ball.drag*time));shot.lift=Math.max(2,(.3-CFG.setPiece.throwHeight)/time+CFG.ball.gravity*time/2);}
+    const len=Math.hypot(shot.dx,shot.dz)||1;
+    const side=Math.sign(r.z);g.ball.x=r.x;g.ball.z=side*19.85;g.ball.y=CFG.setPiece.throwHeight;
+    Object.assign(g.ball,{vx:shot.dx/len*shot.speed,vz:shot.dz/len*shot.speed,vy:shot.lift,spin:0,owner:null,held:0,freeTime:.4,lastTeam:r.team,lastPlayer:p.index,throwInTeam:r.team});
+    p.throwReady=false;p.throwTime=CFG.setPiece.throwFollow;p.cooldown=.8;p.kick=0;
+    g.audio.play('kick');
+  }else{
+    if(r.type==='PENALTY'){
+      const error=(1-composure(r))*.18,sign=Math.sin((r.elapsed||0)*7)>=0?1:-1;
+      shot.dz+=error*sign*3;shot.lift+=error*3;r.timing=composure(r);
+    }
+    if (!g.ball.kick(p, shot.dx, shot.dz, shot.speed, shot.lift, shot.spin))return false;
+  }
+  const face=Math.hypot(shot.dx,shot.dz)||1;p.dx=shot.dx/face;p.dz=shot.dz/face;
   if (r.type === "PENALTY") {
     g.rules.penaltyExtension = 3;
     const keeper = g.teams[1 - r.team].players[0];
@@ -249,7 +274,7 @@ export function strikeRestart(g, short = false) {
     g.matchStats.shots++;
   if (r.team === 0 && short) g.passIntent = { from: p.index, ttl: 4 };
   g.camera && (g.camera.shake = 0.2);
-  g.rules.lastRestart = { type: r.type, team: r.team };
+  g.rules.lastRestart = { type: r.type, team: r.team, timing:r.timing };
   g.rules.restart = null;
   g.state.set("playing");
   g.notice = "";

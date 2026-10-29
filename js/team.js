@@ -24,7 +24,7 @@ export class Team {
       p.vx = p.vz = 0;
       p.target.x = p.x;
       p.target.z = p.z;
-      p.cleanSlide = false;
+      p.cleanSlide = false;p.throwReady=false;p.throwTime=0;p.celebrationTime=0;
       p.penaltyDiveTime = 0;
       p.setPieceHold = 0;
       p.setPieceRun = 0;

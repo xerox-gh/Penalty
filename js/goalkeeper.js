@@ -38,7 +38,7 @@ export function goalkeeper(p, team, ball, dt, audio) {
     p.diveSide = (Math.sign(ball.z-p.z)||1)*team.dir;
     p.dive = incoming ? 0.6 : 0;
     audio.play("kick");
-    ball.lastTeam = team.id;
+    ball.lastTeam = team.id;ball.lastPlayer=p.index;ball.throwInTeam=null;
     if (Math.hypot(ball.vx, ball.vz) < 24 && ball.y < 1.8) {
       ball.held = 0.85;
       ball.owner = p;

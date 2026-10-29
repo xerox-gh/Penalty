@@ -30,6 +30,7 @@ export class Ball {
       vz: 0,
       spin: 0,
       lastTeam: 0,
+      lastPlayer:null,throwInTeam:null,
       owner: null,
       held: 0,
       freeTime: 0,
@@ -49,7 +50,7 @@ export class Ball {
     this.vz = (dz / l) * power + p.vz * 0.2;
     this.vy = lift;
     this.spin = spin;
-    this.lastTeam = p.team;
+    this.lastTeam = p.team;this.lastPlayer=p.index;this.throwInTeam=null;
     this.owner = null;
     this.freeTime = 0.18;
     p.cooldown = 0.3;
@@ -149,14 +150,14 @@ export class Ball {
             this.vx=dx/len*(attacking?17:14);this.vz=dz/len*(attacking?17:14);this.vy=attacking?1.5:5;
             p.kick=.3;p.header=.35;this.audio.play("kick");
           } else {this.vx*=-.45;this.vz*=-.45;this.vy=2;}
-          this.owner=null;this.lastTeam=p.team;this.freeTime=.25;p.cooldown=.4;return;
+          this.owner=null;this.lastTeam=p.team;this.lastPlayer=p.index;this.throwInTeam=null;this.freeTime=.25;p.cooldown=.4;return;
         }
         continue;
       }
       if (p.slide > 0 && d < CFG.control.tackleReach) {
         this.vx = p.dx * 13;
         this.vz = p.dz * 13;
-        this.lastTeam = p.team;
+        this.lastTeam = p.team;this.lastPlayer=p.index;this.throwInTeam=null;
         p.cooldown = 0.5;
         p.cleanSlide = true;
         this.freeTime = 0.2;
@@ -180,13 +181,13 @@ export class Ball {
         if (dot < 0) {
           this.vx -= 1.5 * dot * nx;
           this.vz -= 1.5 * dot * nz;
-          this.lastTeam = p.team;
+          this.lastTeam = p.team;this.lastPlayer=p.index;this.throwInTeam=null;
         }
       }
     }
     if (receiver) {
       this.owner = receiver;
-      this.lastTeam = receiver.team;
+      this.lastTeam = receiver.team;this.lastPlayer=receiver.index;this.throwInTeam=null;
       this.vx *= 0.35;
       this.vz *= 0.35;
     }

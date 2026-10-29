@@ -12,6 +12,7 @@ export class Rules {
   kickoff(team = 0) {
     const g = this.g;
     this.restart = null;
+    g.celebration=null;
     this.penaltyExtension = 0;
     g.teams.forEach((t) => t.reset());
     g.ball.reset();
@@ -40,6 +41,11 @@ export class Rules {
       crossingY < CFG.pitch.goalHeight - CFG.ball.radius
     ) {
       const id = b.x > 0 ? 0 : 1;
+      if(b.throwInTeam!=null){
+        const own=id!==b.throwInTeam;
+        this.award(own?'CORNER':'GOAL KICK',1-b.throwInTeam,Math.sign(b.x)*(own?29.3:28),own?Math.sign(b.z||1)*19.3:0);return;
+      }
+      g.celebration={team:id,index:b.lastTeam===id?(b.lastPlayer??4):4,time:0};
       g.teams[id].score++;
       this.goals++;
       g.audio.play("net");
@@ -59,7 +65,7 @@ export class Rules {
         return;
       }
       let team = 1 - b.lastTeam,
-        type = "KICK-IN",
+        type = "THROW-IN",
         x = clamp(b.x, -29, 29),
         z = Math.sign(b.z) * (b.boardsEnabled ? 19.7 : 20);
       if (Math.abs(b.x) > 30 + CFG.ball.radius) {

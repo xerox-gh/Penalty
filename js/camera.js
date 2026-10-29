@@ -23,17 +23,16 @@ export class Camera {
       this.pos.set(-28 + Math.sin(time * 0.08) * 4, 29, 42);
       this.look.set(0, 0, 0);
     } else if (state === "goal") {
-      this.pos.set(
-        ball.x - Math.sign(ball.x) * 12,
-        7,
-        ball.z + Math.sin(time) * 10,
-      );
-      this.look.set(ball.x, 1, ball.z);
+      this.pos.set(p.x+Math.sin(time*.8)*6,3.5+portrait*.25,p.z+Math.cos(time*.8)*7);
+      this.look.set(p.x,1.05,p.z);
     } else if (state === "setpiece" && restart) {
       const r=restart, dir=r.dir;
       if(r.type === "PENALTY" || r.type === "FREE KICK") {
         this.pos.set(r.x-dir*(portrait?19:11),portrait?11:6.5,r.z+dir*.4);
         this.look.set(dir*30,portrait?-1.5:1.4,0);
+      } else if(r.type==='THROW-IN'){
+        this.pos.set(r.x-dir*7,7+portrait*.4,r.z+Math.sign(r.z)*9);
+        this.look.set(r.x+dir*5,1,r.z-Math.sign(r.z)*6);
       } else {
         this.pos.set(r.x-dir*12,22+portrait,r.z+Math.sign(r.z||1)*12);
         this.look.set(r.type==="CORNER"?dir*25:r.x+dir*12,0,r.z*.25);

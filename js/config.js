@@ -38,6 +38,10 @@ export const CFG = {
     runDuration: 3.5,
   },
   setPiece: {
+    throwHeight: 2.05,
+    throwFollow: .75,
+    timingSpeed: 2.4,
+    contactLift: 2.6,
     setupTime: 1.4,
     aiWait: 3.2,
     timeLimit: 25,
