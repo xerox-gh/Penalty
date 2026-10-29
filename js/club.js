@@ -1,3 +1,4 @@
+import {navigation,careerHub,careerDashboard,resetPanel} from './career-hub.js';
 import {practiceMenu} from './practice.js';
 import {CUPS} from './competitions.js';
 import {modeTeamPicker,assistPicker,cupMenu,visibleCups,displayCareerClubs} from './competition-ui.js';
@@ -117,7 +118,13 @@ export class Club {
       const [verb, id] = action.split(":");
       if (verb === "tab") {
         this.tab = id;
+        this.resetTarget=null; this.message="";
         this.reveal = [];
+      } else if(verb==='reset-ask'){this.resetTarget=id;
+      } else if(verb==='reset-cancel'){this.resetTarget=null;
+      } else if(verb==='reset-confirm'){
+        if(this.resetTarget!==id)throw Error('Select Reset career first.');
+        this.save.resetCareer(id);this.resetTarget=null;this.message='Career reset. Shared rewards and other careers kept.';
       } else if(verb==='practice'){this.game.startPractice(id,this.el.querySelector('#practiceDifficulty').value);return;
       } else if(verb==='assist'){if(this.save.data.pending)throw Error('Finish the pending match first.');this.save.change(d=>d.aiAssist=!d.aiAssist);this.message='AI assistance setting saved.';
       } else if(verb==='cup-view'){const cup=CUPS.find(c=>c.id===id);if(!cup)throw Error('Unknown cup.');this.cupChoice=id;if(!visibleCups(this).some(c=>c.id===id)){this.cupRegion=cup.region;this.cupKind='all';}
@@ -228,19 +235,23 @@ export class Club {
       c = d.career,
       locked = !!d.pending;
     let body = "";
-    if (this.tab === "play") body=homeMenu(this)+assistPicker(this)+'<details class=modeOptions><summary>MATCH OPTIONS · TEAM SELECTION</summary>'+modeTeamPicker(this,'quick','QUICK MATCH')+modeTeamPicker(this,'cup','CLASSIC KNOCKOUT CUP')+modeTeamPicker(this,'challenge','CHALLENGES')+'</details>';
+    if(this.tab==='play')body=homeMenu(this);
+    if(this.tab==='careers')body=careerHub(this);
+    if(this.tab==='exhibition')body='<h2>QUICK MATCH</h2><p>Play a one-off match with your squad or a league club. Choose duration, difficulty and local two-player on the match setup screen.</p>'+modeTeamPicker(this,'quick','QUICK MATCH')+button('quick','CONTINUE TO MATCH SETUP →',locked);
+    if(this.tab==='challenges')body='<h2>CHALLENGES & CLASSIC CUP</h2><p>Short objectives and the original knockout cup.</p>'+modeTeamPicker(this,'challenge','CHALLENGES')+'<div class="heroActions">'+CHALLENGES.map(c=>button('challenge:'+c.id,c.name,locked)).join('')+'</div>'+modeTeamPicker(this,'cup','CLASSIC CUP')+button('start:cup','PLAY CLASSIC CUP',locked);
+    if(this.tab==='controls')body='<h2>CONTROLS & ASSISTANCE</h2><p>Move: WASD / arrows · Sprint: Shift · Shoot: hold Space · Pass: E · Through ball: R · Lob: Q · Tackle: F · Switch: Tab · Camera: C · Pause: P / Esc · Mute: M.</p><p>Touch controls appear on touch devices. Gamepads are supported. Set-piece aiming instructions appear during the restart. Learn each action in Practice.</p>'+button('tab:practice','OPEN PRACTICE')+assistPicker(this);
     if(this.tab==='practice')body=practiceMenu();
-    if(this.tab==='cups')body=cupMenu(this)+assistPicker(this);
-    if (this.tab === "world") body=worldMenu(this)+assistPicker(this);
+    if(this.tab==='cups')body=cupMenu(this);
+    if (this.tab === "world") body=worldMenu(this);
     if (this.tab === "settings") body=settingsMenu(this);
     if (this.tab === "health") body=healthMenu(this);
-    if (this.tab === "player") body = modeTeamPicker(this,"player","PLAYER CAREER")+assistPicker(this)+renderPlayerCareer(this, displayCareerClubs(this,"player",CLUBS));
+    if (this.tab === "player") body = `<details class="modeOptions" ${d.playerCareer?'':'open'}><summary>PLAYER CAREER TEAM</summary>${modeTeamPicker(this,"player","PLAYER CAREER")}</details>`+renderPlayerCareer(this, displayCareerClubs(this,"player",CLUBS));
     if (this.tab === "career") {
       const leagueClubs=displayCareerClubs(this,"career",CLUBS);
       const fixture =
           c.round < 10 ? SCHEDULE[c.round].find((f) => f.includes(0)) : null,
         opponent = fixture ? leagueClubs[fixture.find((i) => i !== 0)] : null;
-      body = modeTeamPicker(this,"career","CLUB CAREER")+assistPicker(this)+`<div class="sectionHeading"><div><span class="eyebrow">DIVISION ${c.division} / SEASON ${c.season}</span><h2>${opponent ? `NEXT: ${opponent.name}` : "SEASON COMPLETE"}</h2><p>${opponent ? `Matchday ${c.round + 1} of 10 · 2 minutes · ${["Hard", "Medium", "Easy"][c.division - 1]}` : `Finished ${c.lastFinish?.rank || "—"} of 6. ${c.lastFinish?.promoted ? "Promotion earned!" : "Time to go again."}`}</p></div>${button(opponent ? "start:career" : "season", opponent ? "PLAY FIXTURE →" : "START NEXT SEASON →", locked)}</div><div class="tableScroll"><table><thead><tr><th>POS</th><th>CLUB</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>PTS</th></tr></thead><tbody>${tableOrder(
+      body = `<details class="modeOptions" ${c.round===0?'open':''}><summary>CLUB CAREER TEAM</summary>${modeTeamPicker(this,"career","CLUB CAREER")}</details>`+`<div class="sectionHeading"><div><span class="eyebrow">DIVISION ${c.division} / SEASON ${c.season}</span><h2>${opponent ? `NEXT: ${opponent.name}` : "SEASON COMPLETE"}</h2><p>${opponent ? `Matchday ${c.round + 1} of 10 · 2 minutes · ${["Hard", "Medium", "Easy"][c.division - 1]}` : `Finished ${c.lastFinish?.rank || "—"} of 6. ${c.lastFinish?.promoted ? "Promotion earned!" : "Time to go again."}`}</p></div>${button(opponent ? "start:career" : "season", opponent ? "PLAY FIXTURE →" : "START NEXT SEASON →", locked)}</div><div class="tableScroll"><table><thead><tr><th>POS</th><th>CLUB</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>PTS</th></tr></thead><tbody>${tableOrder(
         c,
       )
         .map(
@@ -281,27 +292,8 @@ export class Club {
     if (this.tab === "quests")
       body = `<span class="eyebrow">CONTRACT BOARD ${d.contracts.number}</span><h2>GIVE EVERY MATCH A PURPOSE</h2><p>Claim all three contracts to refresh the board. No timers. No daily login.</p><div class="questGrid">${CONTRACTS.map((q) => this.quest(q, true)).join("")}</div><h2>CLUB MILESTONES</h2><div class="questGrid">${QUESTS.map((q) => this.quest(q)).join("")}</div>`;
     if (this.tab === "club")
-      body = `<h2>THE KIT ROOM</h2><div class="questGrid">${KITS.map((k) => `<article class="quest"><div class="kitSwatch" style="--kit:${k.color}">P /</div><h3>${k.name}</h3>${button("kit:" + k.id, d.kit === k.id ? "EQUIPPED" : d.kits.includes(k.id) ? "EQUIP" : `${k.cost} COINS`, locked || d.kit === k.id || (!d.kits.includes(k.id) && d.coins < k.cost))}</article>`).join("")}</div><h2>TROPHY CABINET</h2><div class="resultsList">${[...d.trophies, ...d.challenges.map((id) => "Challenge: " + CHALLENGES.find((c) => c.id === id).name)].map((t) => `<span>★ ${esc(t)}</span>`).join("") || "<p>Your first piece of silverware is waiting.</p>"}</div><h2>CLUB RECORD</h2><p>${d.stats.matches} matches · ${d.stats.wins} wins · ${d.stats.goals} goals · ${d.stats.passes} completed passes</p><h2>YOUR OFFLINE SAVE</h2><p>Progress is stored in this browser on this device. Export a backup to keep it when clearing browser data, moving devices or changing site addresses. Import replaces this device’s club.</p><div class="backupActions">${button("export", "EXPORT BACKUP")}<label class="fileLabel">IMPORT BACKUP<input id="saveFile" type="file" accept="application/json,.json"></label></div>`;
-    this.el.innerHTML = `<header class="clubHeader"><b>PENALTY <small>MATCHDAY / 03</small></b><div><span>LEVEL ${level(d.xp)}</span><strong>${d.coins} <small>COINS</small></strong><span>${d.packs} PACKS</span></div></header><nav class="clubTabs" aria-label="Club sections">${[
-      ["play", "HOME"],
-      ["world", "WORLD LEAGUES"],
-      ["cups", "CUPS"],
-      ["practice", "PRACTICE"],
-      ["career", "CLUB CAREER"],
-      ["player", "PLAYER CAREER"],
-      ["squad", "SQUAD & CARDS"],
-      ["shop", "PACK SHOP"],
-      ["quests", "QUESTS"],
-      ["club", "MY CLUB"],
-      ["settings", "STADIUMS"],
-      ["health", "SAVE HEALTH"],
-    ]
-      .map(
-        ([id, label]) =>
-          `<button data-club="tab:${id}" aria-current="${this.tab === id ? "page" : "false"}">${label}</button>`,
-      )
-      .join(
-        "",
-      )}</nav><div class="xpTrack"><progress value="${d.xp % 300}" max="300"></progress><small>${d.xp % 300}/300 XP · NEXT LEVEL: 1 PACK</small></div><p class="clubStatus" role="status">${esc([this.message, this.save.message || "OFFLINE CLUB · ALL REWARDS EARNED THROUGH PLAY"].filter(Boolean).join(" · "))}</p>${this.save.corrupt?`<aside class="pendingMatch"><b>Save recovery required</b>${button("tab:health","OPEN SAVE HEALTH")}</aside>`:""}${locked ? `<aside class="pendingMatch"><b>Unfinished ${esc(d.pending.kind)} match</b><span>Resume restarts this fixture from kickoff.</span>${button("resume", "RESUME")}${button("abandon", "ABANDON · NO REWARD")}</aside>` : ""}<div class="clubBody">${body}</div>`;
+      body = `<label>CLUB NAME<input id="clubName" maxlength="18" value="${esc(d.clubName)}" ${locked?"disabled":""}></label><h2>THE KIT ROOM</h2><div class="questGrid">${KITS.map((k) => `<article class="quest"><div class="kitSwatch" style="--kit:${k.color}">P /</div><h3>${k.name}</h3>${button("kit:" + k.id, d.kit === k.id ? "EQUIPPED" : d.kits.includes(k.id) ? "EQUIP" : `${k.cost} COINS`, locked || d.kit === k.id || (!d.kits.includes(k.id) && d.coins < k.cost))}</article>`).join("")}</div><h2>TROPHY CABINET</h2><div class="resultsList">${[...d.trophies, ...d.challenges.map((id) => "Challenge: " + CHALLENGES.find((c) => c.id === id).name)].map((t) => `<span>★ ${esc(t)}</span>`).join("") || "<p>Your first piece of silverware is waiting.</p>"}</div><h2>CLUB RECORD</h2><p>${d.stats.matches} matches · ${d.stats.wins} wins · ${d.stats.goals} goals · ${d.stats.passes} completed passes</p><h2>YOUR OFFLINE SAVE</h2><p>Progress is stored in this browser on this device. Export a backup to keep it when clearing browser data, moving devices or changing site addresses. Import replaces this device’s club.</p><div class="backupActions">${button("export", "EXPORT BACKUP")}<label class="fileLabel">IMPORT BACKUP<input id="saveFile" type="file" accept="application/json,.json"></label></div>`;
+    if(['world','career','player'].includes(this.tab))body=careerDashboard(this,this.tab)+body+resetPanel(this,this.tab);
+    this.el.innerHTML = `<header class="clubHeader"><b>PENALTY <small>CAREER / 04</small></b><div><span>LEVEL ${level(d.xp)}</span><strong>${d.coins} <small>COINS</small></strong><span>${d.packs} PACKS</span></div></header>${navigation(this.tab)}<div class="xpTrack"><progress value="${d.xp % 300}" max="300"></progress><small>${d.xp % 300}/300 XP · NEXT LEVEL: 1 PACK</small></div><p class="clubStatus" role="status">${esc([this.message, this.save.message || "OFFLINE CLUB · ALL REWARDS EARNED THROUGH PLAY"].filter(Boolean).join(" · "))}</p>${this.save.corrupt?`<aside class="pendingMatch"><b>Save recovery required</b>${button("tab:health","OPEN SAVE HEALTH")}</aside>`:""}${locked ? `<aside class="pendingMatch"><b>Unfinished ${esc(d.pending.kind)} match</b><span>Resume restarts this fixture from kickoff.</span>${button("resume", "RESUME")}${button("abandon", "ABANDON · NO REWARD")}</aside>` : ""}<div class="clubBody">${body}</div>`;
   }
 }

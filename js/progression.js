@@ -828,6 +828,19 @@ export class Progression {
       Object.assign(d.playerCareer, {season:d.playerCareer.season+1,round:0,points:0,history:[]});
     });
   }
+  resetCareer(kind) {
+    // Scoped reset: never touch shared rewards, identity, collection or other careers.
+    this.change(d=>{
+      need(!d.pending,"Resume or abandon the unfinished match before resetting a career.");
+      need(['career','player','world'].includes(kind),"Unknown career.");
+      if(kind==='career'){d.career=newCareer();d.modeClubs.career=null;}
+      if(kind==='world')d.worldCareer=null;
+      if(kind==='player'){
+        need(d.playerCareer,"Create a player career first.");
+        d.playerCareer=newPlayerCareer(d.playerCareer.profile);d.modeClubs.player=null;
+      }
+    });
+  }
   startWorld(club) { this.change(d=>{need(!d.pending,"Finish or abandon the pending match first.");need(!d.worldCareer,"A World League career already exists. Continue it or use Exhibition to try other clubs.");d.worldCareer=newWorldCareer(Number(club));}); }
   nextWorld() { this.change(d=>{need(!d.pending && d.worldCareer,"Finish the pending match first.");nextWorldSeason(d.worldCareer);}); }
   selectModeClub(mode,id) {this.change(d=>{

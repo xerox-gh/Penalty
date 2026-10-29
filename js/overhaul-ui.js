@@ -18,54 +18,13 @@ const esc = (s) =>
 const btn = (action, text, off = false) =>
   `<button data-club="${action}" ${off ? "disabled" : ""}>${text}</button>`;
 export function homeMenu(club) {
-  const d = club.save.data,
-    locked = !!d.pending;
-  return `<div class="hubLive"><span>● OFFLINE CLUB</span><span>CAREER / CARDS / WORLD FOOTBALL</span></div><section class="worldHero"><div><span class="eyebrow">PENALTY / MATCHDAY</span><h1>OWN THE<br><em>MATCHDAY.</em></h1><p>Build your club. Write your career. Lift the cup.</p><div class="heroActions">${btn("quick", "PLAY NOW →", locked)}${btn("tab:world", "WORLD LEAGUES ↗")}${btn("tab:cups", "CUP CENTRAL ↗")}${btn("tab:practice", "PRACTICE ↗")}</div><div class="worldNumbers"><span><b>${WORLD_LEAGUES.length}</b>DIVISIONS</span><span><b>${WORLD_CLUBS.length}</b>CLUBS</span><span><b>5 v 5</b>YOUR GAME</span></div></div><div class="heroPitch" aria-hidden="true"><i></i><span class="pitchDot d1"></span><span class="pitchDot d2"></span><span class="pitchDot d3"></span><strong>P /<small>MAKE YOUR MARK</small></strong></div></section>
- <div class="hubSection"><span class="eyebrow">CHOOSE YOUR NEXT CHAPTER</span><label>YOUR CLUB<input id="clubName" maxlength="18" value="${esc(d.clubName)}" ${locked ? "disabled" : ""}></label></div>
- <div class="chapterGrid">${[
-   [
-     "01",
-     "World Leagues",
-     "38 countries. Promotion, relegation and a full fixture calendar.",
-     "world",
-   ],
-   [
-     "02",
-     "Club Career",
-     "Your collectible squad, ten-match seasons and trophies.",
-     "career",
-   ],
-   [
-     "03",
-     "Player Career",
-     "Create your own star, train and chase silverware.",
-     "player",
-   ],
-   [
-     "04",
-     "Squad & Cards",
-     "Five attributes. Build a side that plays your way.",
-     "squad",
-   ],
-   [
-     "05",
-     "Stadium Studio",
-     "Four venues. Seven turf palettes. Your home ground.",
-     "settings",
-   ],
-   [
-     "06",
-     "Save Health",
-     "Check progress, repair counters and recover a backup.",
-     "health",
-   ],
- ]
-   .map(
-     ([n, title, desc, id]) =>
-       `<article><span>${n} /</span><h2>${title}</h2><p>${desc}</p>${btn("tab:" + id, "OPEN →")}</article>`,
-   )
-   .join("")}</div>
- <div class="hubSection"><h2>CUPS & CHALLENGES</h2>${btn("tab:cups", "INTERNATIONAL & CLUB CUPS →")}${btn("start:cup", "KNOCKOUT CUP →", locked)}</div><div class="heroActions">${btn("challenge:comeback", "COMEBACK CHALLENGE", locked)}${btn("challenge:clean", "CLEAN SHEET", locked)}${btn("challenge:three", "THREE-GOAL RUSH", locked)}${btn("tab:quests", "QUEST BOARD →")}</div>`;
+ const d=club.save.data;
+ return `<div class="hubLive"><span>● OFFLINE FOOTBALL</span><span>YOUR NEXT MATCH STARTS HERE</span></div><section class="worldHero"><div><span class="eyebrow">PENALTY / MATCHDAY</span><h1>YOUR CLUB.<br><em>YOUR STORY.</em></h1><p>Play a match, continue a career or train your skills.</p><div class="heroActions">${btn('tab:exhibition','QUICK MATCH →')}${btn('tab:careers','CONTINUE A CAREER →')}</div></div><div class="heroPitch" aria-hidden="true"><i></i><strong>P /<small>MAKE YOUR MARK</small></strong></div></section><div class="chapterGrid">${[
+ ['careers','Careers','Manager, club and player careers. Find your next fixture and season progress.'],
+ ['cups','Cups','Choose a continent, club cup or international tournament.'],
+ ['practice','Practice','Attacking, defending and every set piece. No career progress affected.'],
+ ['squad','My club','Equip cards, open packs and claim earned rewards.'],
+ ].map(([id,title,desc])=>`<article><h2>${title}</h2><p>${desc}</p>${btn('tab:'+id,'OPEN →')}</article>`).join('')}</div>`;
 }
 export function worldMenu(club) {
   const c = club.save.data.worldCareer,
@@ -78,7 +37,7 @@ export function worldMenu(club) {
           `<option value="${id}" ${id === selected ? "selected" : ""}>${esc(worldClub(id).name)} · ${worldClub(id).rating} OVR</option>`,
       )
       .join("");
-  let body = `<div class="sectionHeading"><div><span class="eyebrow">TOP CORNER WORLD × PENALTY</span><h2>YOUR FOOTBALL UNIVERSE</h2><p>Original fictional clubs from Top Corner, adapted to Penalty's 5v5 matches. Choose a division to browse, play an exhibition or start a World League career.</p></div></div><div class="worldBrowser"><label>COUNTRY / DIVISION<select id="worldLeague">${WORLD_LEAGUES.map((v) => `<option value="${v.id}" ${v.id === l.id ? "selected" : ""}>${esc(v.country)} · ${esc(v.name)}</option>`).join("")}</select></label><label>YOUR CLUB<select id="worldHome">${options(l.clubs, club.worldHome ?? l.clubs[0])}</select></label><label>EXHIBITION OPPONENT<select id="worldAway">${options(l.clubs, club.worldAway ?? l.clubs[1])}</select></label><div class="heroActions">${btn("world-exhibition", "PLAY EXHIBITION →", locked)}${!c ? btn("world-create", "START WORLD CAREER", locked) : ""}</div></div>`;
+  let body = `${c?'<details class="modeOptions"><summary>BROWSE CLUBS & EXHIBITION</summary>':''}<div class="sectionHeading"><div><span class="eyebrow">MANAGER CAREER</span><h2>MANAGER OFFICE</h2><p>Choose your club and lead it through full league seasons. Play or simulate fixtures, track the table and earn promotion. Matches use the arcade 5v5 engine.</p></div></div><div class="worldBrowser"><label>COUNTRY / DIVISION<select id="worldLeague">${WORLD_LEAGUES.map((v) => `<option value="${v.id}" ${v.id === l.id ? "selected" : ""}>${esc(v.country)} · ${esc(v.name)}</option>`).join("")}</select></label><label>YOUR CLUB<select id="worldHome">${options(l.clubs, club.worldHome ?? l.clubs[0])}</select></label><label>EXHIBITION OPPONENT<select id="worldAway">${options(l.clubs, club.worldAway ?? l.clubs[1])}</select></label><div class="heroActions">${btn("world-exhibition", "PLAY EXHIBITION →", locked)}${!c ? btn("world-create", "START MANAGER CAREER", locked) : ""}</div></div>${c?'</details>':''}`;
   if (c) {
     const league = WORLD_LEAGUES[c.league],
       pair = worldFixture(c),

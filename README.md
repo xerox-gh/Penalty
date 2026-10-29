@@ -312,3 +312,20 @@ Validation: `node tests/set-pieces.mjs` checks fouls at both ends, box boundarie
 - [ ] Pause during an attempt and retry countdown; resume without losing time.
 - [ ] Enter/exit practice with an unfinished career fixture; verify the save remains unchanged.
 - [ ] Reload offline and start a practice set piece on mobile.
+
+## Career central and reorganized menus
+
+The main menu now has four sections, with descriptive secondary pages:
+
+- **Play**: Home, Quick match, Cups, Challenges and Practice.
+- **Careers**: Career hub, Manager career (previously World Leagues), Club career and Player career.
+- **My club**: Squad & cards, Pack shop, Rewards & quests, Kits & trophies (including club naming).
+- **Settings**: Stadium & pitch, Controls & assistance, Save & backup.
+
+Manager career follows a selected league club through full home-and-away seasons, play/simulation, tables and promotion/relegation. Career central adds the full fixture calendar, home/away labels, next fixture, progress, recent form, season objectives and manager team sheet. Club career retains its compact ten-match league. Player career retains its ten-match points target and training progression. Player editing and manager club browsing are collapsed after creation so they do not obscure the ongoing career.
+
+**Reset career** is at the bottom of each existing career page. It opens a confirmation with Export backup, Keep my career and Yes, reset this career. It resets only that career; shared coins, packs, collection, quests, trophies and other careers stay. Club career returns to division 3/season 1 and clears team selection. Manager career returns to club creation. Player career restarts its counters, titles and training balance but keeps the custom player, appearance and current stats; team selection is cleared. Finish or abandon any pending match before resetting. Export first if you want a permanent copy of the old career.
+
+This is an original arcade career experience, not the complete FC management simulation: transfers, contracts, financial budgets, injuries and a date-based training calendar are not implemented. The fixture calendar uses matchdays, not real-world dates. Manager rosters are fixed; player training and collectible squad selection remain in their respective careers.
+
+Verification: `node tests/career-hub.mjs` checks scoped resets, pending-match protection, calendars and save round trips. Browser checks cover reset cancellation/confirmation, all menu pages at 390px, offline reload and `/Penalty/` subpath loading. Physical-device and cross-browser checks remain manual.
